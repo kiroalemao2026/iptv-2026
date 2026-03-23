@@ -81,6 +81,41 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // API Pública - Retorna a URL da lista IPTV configurada pelo admin
+    if (req.url === '/api/public-config' && req.method === 'GET') {
+        let configData = { url: '' };
+        if (fs.existsSync('./config.json')) {
+            configData = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ url: configData.url || '' }));
+        return;
+    }
+
+    // API Admin - Salva a URL nova
+    if (req.url === '/api/admin-config' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body);
+                // Senha do painel admin (exemplo simples: admin123)
+                if (data.senha !== '1234') {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Senha incorreta!' }));
+                    return;
+                }
+                fs.writeFileSync('./config.json', JSON.stringify({ url: data.url }), 'utf8');
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Erro nos dados enviados.' }));
+            }
+        });
+        return;
+    }
+
     // Servir arquivos estáticos
     let filePath = '.' + req.url;
     if (filePath === './') filePath = './index.html';

@@ -13,7 +13,7 @@
         <header class="cabecalho">
             <h1><i class="fas fa-tv"></i> Reprodutor IPTV</h1>
             <div class="controles-cabecalho">
-                <button id="btn-adicionar-lista" class="botao-primario">
+                <button id="btn-adicionar-lista" class="botao-primario" style="display: none;">
                     <i class="fas fa-plus"></i> Adicionar Lista
                 </button>
                 <button id="btn-configuracoes" class="botao-secundario">
@@ -23,9 +23,9 @@
         </header>
 
         <main class="conteudo-principal">
-            <!-- Painel de Listas -->
+            <!-- Painel de Listas (Escondido, modo Admin apenas) -->
             <aside class="painel-lateral">
-                <div class="secao">
+                <div class="secao" style="display:none;">
                     <h2>Minhas Listas</h2>
                     <div id="listas-iptv" class="lista-container">
                         <p class="mensagem-vazia">Nenhuma lista adicionada</p>

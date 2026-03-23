@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Reprodutor IPTV</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; height: 100vh; background-color: var(--fundo-corpo); }
+        .admin-box { background: var(--fundo-principal); padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid var(--fundo-secundario); max-width: 400px; width: 100%; }
+        .admin-box h2 { margin-top: 0; color: var(--texto-primario); text-align: center; margin-bottom: 20px; }
+        .admin-box .campo-formulario { margin-bottom: 15px; }
+        .admin-box label { display: block; color: var(--texto-secundario); margin-bottom: 5px; }
+        .admin-box input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--fundo-secundario); background: var(--fundo-secundario); color: var(--texto-primario); }
+        .admin-box button { width: 100%; padding: 12px; margin-top: 10px; font-weight: bold; }
+        .msg { margin-top: 15px; text-align: center; font-size: 14px; }
+        .erro { color: var(--cor-perigo); }
+        .sucesso { color: var(--cor-sucesso); }
+    </style>
+</head>
+<body>
+    <div class="admin-box">
+        <h2><i class="fas fa-lock"></i> Painel Admin</h2>
+        <div class="campo-formulario">
+            <label>Nova URL da Lista M3U:</label>
+            <input type="url" id="admin-url" placeholder="Ex: https://lista.m3u">
+        </div>
+        <div class="campo-formulario">
+            <label>Senha de Administrador:</label>
+            <input type="password" id="admin-senha" placeholder="Digite a senha (1234)">
+        </div>
+        <button id="btn-atualizar" class="botao-primario">Atualizar Lista Oficial</button>
+        <p id="msg-retorno" class="msg"></p>
+    </div>
+
+    <script>
+        // Carrega a URL atual configurada para facilitar a alteração
+        fetch('/api/public-config').then(res => res.json()).then(data => {
+            if(data.url) document.getElementById('admin-url').value = data.url;
+        });
+
+        document.getElementById('btn-atualizar').addEventListener('click', async () => {
+            const url = document.getElementById('admin-url').value;
+            const senha = document.getElementById('admin-senha').value;
+            const msg = document.getElementById('msg-retorno');
+
+            msg.className = 'msg';
+            msg.textContent = 'Salvando...';
+
+            try {
+                const res = await fetch('/api/admin-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, senha })
+                });
+
+                const data = await res.json();
+                if(data.success) {
+                    msg.className = 'msg sucesso';
+                    msg.innerHTML = 'Lista atualizada com sucesso!<br><a href="/" style="color:var(--cor-destaque);">Ver o Reprodutor</a>';
+                } else {
+                    msg.className = 'msg erro';
+                    msg.textContent = data.error || 'Erro desconhecido.';
+                }
+            } catch(e) {
+                msg.className = 'msg erro';
+                msg.textContent = 'Erro ao contatar servidor.';
+            }
+        });
+    </script>
+</body>
+</html>

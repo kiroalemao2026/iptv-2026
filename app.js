@@ -91,38 +91,46 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==================== Funções de Dados ====================
-function carregarDados() {
-    // Carregar listas salvas
-    const listasSalvas = localStorage.getItem('listasIPTV');
-    if (listasSalvas) {
-        estado.listas = JSON.parse(listasSalvas);
-        renderizarListas();
-    }
-    
-    // Carregar favoritos
+async function carregarDados() {
+    // Carregar favoritos locais do usuário
     const favoritosSalvos = localStorage.getItem('canaisFavoritos');
     if (favoritosSalvos) {
         estado.favoritos = new Set(JSON.parse(favoritosSalvos));
     }
     
-    // Carregar configurações
+    // Carregar configurações visuais
     const configSalvas = localStorage.getItem('configIPTV');
     if (configSalvas) {
         estado.config = { ...estado.config, ...JSON.parse(configSalvas) };
     }
     
-    // Carregar última lista
-    const ultimaLista = localStorage.getItem('ultimaLista');
-    if (ultimaLista && estado.listas.length > 0) {
-        const lista = estado.listas.find(l => l.id === ultimaLista);
-        if (lista) {
-            selecionarLista(lista.id);
+    try {
+        const response = await fetch('/api/public-config');
+        const data = await response.json();
+        
+        if (data.url) {
+            mostrarToast('Sincronizando canais...', 'aviso');
+            elementos.listaCanais.innerHTML = '<div class="spinner"></div><p style="text-align:center;margin-top:10px;">Baixando canais...</p>';
+            
+            const canais = await carregarListaM3U(data.url);
+            
+            estado.canais = canais.map(c => ({
+                ...c,
+                favorito: estado.favoritos.has(c.id)
+            }));
+            estado.canaisFiltrados = [...estado.canais];
+            
+            renderizarCanais();
+            mostrarToast(`Foram carregados ${canais.length} canais com sucesso!`, 'sucesso');
+        } else {
+            elementos.listaCanais.innerHTML = '<p class="mensagem-vazia">O administrador ainda não cadastrou a lista IPTV oficial.</p>';
         }
+    } catch (e) {
+        elementos.listaCanais.innerHTML = '<p class="mensagem-vazia erro">Erro ao conectar com o servidor para buscar a lista.</p>';
     }
 }
 
 function salvarDados() {
-    localStorage.setItem('listasIPTV', JSON.stringify(estado.listas));
     localStorage.setItem('canaisFavoritos', JSON.stringify([...estado.favoritos]));
     localStorage.setItem('configIPTV', JSON.stringify(estado.config));
 }
