@@ -90,6 +90,45 @@ document.addEventListener('DOMContentLoaded', () => {
     aplicarConfiguracoes();
 });
 
+/* ==================== Cache Avançado (IndexedDB) ==================== */
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open('IPTVCacheDB', 1);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('cache')) {
+                db.createObjectStore('cache');
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+async function setLargeCache(key, value) {
+    try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('cache', 'readwrite');
+            const store = tx.objectStore('cache');
+            store.put(value, key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch(e) { console.warn('Falha IndexedDB salvar'); }
+}
+async function getLargeCache(key) {
+    try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('cache', 'readonly');
+            const store = tx.objectStore('cache');
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    } catch(e) { return null; }
+}
+
 // ==================== Funções de Dados ====================
 async function carregarDados() {
     // Carregar favoritos locais do usuário
@@ -115,7 +154,7 @@ async function carregarDados() {
             const cacheTimeKey = 'iptv_cache_time';
             const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 horas
 
-            const cachedCanais = localStorage.getItem(cacheKey);
+            const cachedCanais = await getLargeCache(cacheKey);
             const cachedURL = localStorage.getItem(cacheURLKey);
             const cachedTime = localStorage.getItem(cacheTimeKey);
             const now = Date.now();
@@ -123,8 +162,9 @@ async function carregarDados() {
             let canais = [];
 
             if (cachedCanais && cachedURL === url && cachedTime && (now - parseInt(cachedTime)) < CACHE_DURATION) {
-                // Usar cache de ate 12 horas atrás
-                canais = JSON.parse(cachedCanais);
+                // Usar cache gigante do IndexedDB ate 12 horas atrás
+                canais = cachedCanais;
+                mostrarToast('Canais carregados rapidamente da memória interna.', 'info');
             } else {
                 // Baixar integralmente de novo
                 mostrarToast('Sincronizando canais...', 'aviso');
@@ -132,14 +172,14 @@ async function carregarDados() {
                 
                 canais = await carregarListaM3U(url);
                 
-                // Tenta salvar localmente
+                // Tenta salvar no IndexedDB
                 try {
-                    localStorage.setItem(cacheKey, JSON.stringify(canais));
+                    await setLargeCache(cacheKey, canais);
                     localStorage.setItem(cacheURLKey, url);
                     localStorage.setItem(cacheTimeKey, now.toString());
-                    mostrarToast(`Foram baixados e salvos ${canais.length} canais com sucesso!`, 'sucesso');
+                    mostrarToast(`Foram baixados e salvos em alta capacidade ${canais.length} canais!`, 'sucesso');
                 } catch (e) {
-                    console.warn('A lista é muito grande e não coube no cache do seu navegador local.');
+                    console.warn('Falha ao utilizar IndexedDB da maquina.', e);
                     mostrarToast(`Foram carregados ${canais.length} canais!`, 'sucesso');
                 }
             }

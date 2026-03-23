@@ -1,7 +1,7 @@
 {
   "name": "reprodutor-iptv",
   "version": "1.0.0",
-  "description": "Reprodutor IPTV com proxy embutido",
+  "description": "Nexus TV com proxy embutido",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

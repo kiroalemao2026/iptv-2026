@@ -1,30 +1,30 @@
 /* ==================== Variáveis CSS ==================== */
 :root {
-    --cor-primaria: #2563eb;
-    --cor-primaria-escura: #1d4ed8;
-    --cor-secundaria: #64748b;
-    --cor-sucesso: #22c55e;
+    --cor-primaria: #10b981; /* Verde esmeralda moderno */
+    --cor-primaria-escura: #059669; /* Verde mais escuro para hover */
+    --cor-secundaria: #9ca3af; /* Cinza médio */
+    --cor-sucesso: #10b981;
     --cor-perigo: #ef4444;
     --cor-aviso: #f59e0b;
 
-    --fundo-principal: #0f172a;
-    --fundo-secundario: #1e293b;
-    --fundo-terciario: #334155;
-    --fundo-card: #1e293b;
-    --fundo-hover: #334155;
+    --fundo-principal: #f3f4f6; /* Cinza super claro de fundo */
+    --fundo-secundario: #ffffff; /* Fundo puro branco para os cards/containers */
+    --fundo-terciario: #f9fafb; /* Cinza gélido secundário */
+    --fundo-card: #ffffff; /* Branco absoluto */
+    --fundo-hover: #e5e7eb; /* Hover acinzentado */
 
-    --texto-principal: #f8fafc;
-    --texto-secundario: #94a3b8;
-    --texto-terciario: #64748b;
+    --texto-principal: #1f2937; /* Fonte bem escura para contraste */
+    --texto-secundario: #4b5563; /* Fonte mediana para detalhes */
+    --texto-terciario: #9ca3af;
 
-    --borda: #334155;
-    --borda-foco: #2563eb;
+    --borda: #e5e7eb; /* Borda macia e clara */
+    --borda-foco: #10b981;
 
-    --sombra: 0 10px 40px rgba(0, 0, 0, 0.3);
-    --sombra-pequena: 0 2px 10px rgba(0, 0, 0, 0.2);
+    --sombra: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    --sombra-pequena: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 
-    --raio-borda: 12px;
-    --raio-borda-pequeno: 8px;
+    --raio-borda: 16px; /* Cantos arredondados lindos Apple-like */
+    --raio-borda-pequeno: 10px;
 
     --transicao: all 0.3s ease;
 }
@@ -932,83 +932,288 @@ body {
 }
 
 @media (max-width: 768px) {
-    .cabecalho {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
-        padding: 15px;
-    }
-
-    .controles-cabecalho {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap; /* Impede dos botões quebrarem o layout se for muito estreito */
-    }
-
-    .info-canal {
-        flex-direction: column;
-        text-align: center;
-        padding: 15px;
-    }
-
-    .acoes-canal {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .controles-player {
-        flex-wrap: wrap;
-        padding: 15px;
-        gap: 10px;
-    }
-
-    .controle.volume {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .slider-volume {
-        flex: 1;
-        max-width: 200px;
-    }
-    
-    .lista-canais {
-        max-height: 350px;
-    }
-}
-
-@media (max-width: 480px) {
     .container {
         padding: 10px;
     }
-    
-    .conteudo-principal {
-        gap: 15px;
-        min-height: auto;
-    }
 
+    .cabecalho {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+    }
+    
     .cabecalho h1 {
         font-size: 1.2rem;
     }
 
-    .botao-primario,
-    .botao-secundario {
+    .botao-secundario, .botao-primario {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    .conteudo-principal {
+        gap: 12px;
+    }
+
+    .area-player {
+        gap: 8px;
+    }
+
+    .info-canal {
+        flex-direction: row;
+        text-align: left;
+        padding: 12px 16px;
+        gap: 12px;
+    }
+    
+    .logo-canal {
+        width: 48px;
+        height: 48px;
+    }
+
+    .detalhes-canal h3 {
+        font-size: 1rem;
+        margin-bottom: 2px;
+    }
+
+    .detalhes-canal p {
+        font-size: 0.8rem;
+    }
+
+    .acoes-canal {
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+    
+    .botao-acao {
+        width: 38px;
+        height: 38px;
+        font-size: 0.9rem;
+    }
+
+    .controles-player {
+        flex-wrap: wrap;
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .controle-principal {
+        width: 50px;
+        height: 50px;
+        font-size: 1.1rem;
+    }
+
+    .controle {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+
+    .controle.volume {
+        width: calc(100% - 10px);
+        justify-content: center;
+        order: 3; /* Vai para a linha de baixo */
+    }
+
+    .slider-volume {
+        flex: 1;
+        max-width: none;
+    }
+    
+    .seletor-resolucao {
         padding: 8px 12px;
         font-size: 0.85rem;
     }
     
-    .painel-lateral {
+    .lista-canais {
+        max-height: 400px;
+    }
+    
+    .tela-espera {
+        padding: 20px;
+    }
+    
+    .tela-espera .icone-tv {
+        font-size: 2.5rem;
+        margin-bottom: -5px;
+    }
+    
+    .tela-espera h3 {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Full width viewport app-like experience */
+    body { padding: 0; margin: 0; }
+    .container {
+        padding: 0;
+        max-width: 100vw;
+        border-radius: 0;
+    }
+    
+    .cabecalho {
+        padding: 8px 10px;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 5px;
+        margin-bottom: 0;
+        border-radius: 0;
+        border-bottom: 1px solid var(--borda);
+    }
+
+    .cabecalho h1 {
+        font-size: 1rem;
+    }
+
+    .botao-secundario, .botao-primario {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .conteudo-principal {
+        gap: 0;
+        border-radius: 0;
+    }
+
+    .area-player {
+        gap: 0; /* Remove completamente os buracos entre o player e a info */
+        border-radius: 0;
+    }
+
+    /* Player colado na borda */
+    .player-container {
+        border-radius: 0;
+    }
+
+    .tela-espera {
         padding: 15px;
+    }
+    .tela-espera .icone-tv { font-size: 2rem; }
+    .tela-espera h3 { font-size: 1rem; margin: 5px 0; }
+
+    /* Barra de Informação */
+    .info-canal {
+        padding: 6px 10px;
+        gap: 8px;
+        flex-wrap: nowrap;
+        align-items: center;
+        border-radius: 0;
+        background: var(--fundo-terciario); /* Ligeiramente mais escuro */
+        border-top: 1px solid var(--fundo-principal);
+    }
+    
+    .detalhes-canal {
+        flex: 1 1 auto;
+        text-align: left;
+        margin-bottom: 0;
+        overflow: hidden;
+    }
+    
+    .detalhes-canal h3 {
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+    
+    .detalhes-canal p {
+        font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+    }
+    
+    .logo-canal {
+        margin: 0;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        border-radius: 50%;
+    }
+
+    .acoes-canal {
+        width: auto;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        gap: 4px;
+    }
+    
+    .botao-acao {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+    
+    /* Controles colados com a Info */
+    .controles-player {
+        padding: 8px 10px;
+        gap: 6px;
+        justify-content: space-between; /* Espalha numa linha */
+        flex-wrap: nowrap;
+        border-radius: 0;
+        background: var(--fundo-terciario);
+    }
+
+    /* Força os botões principais de controle a diminuírem e caberem n mesma linha */
+    .controle {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+
+    .controle-principal {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+
+    .controle.volume {
+        width: auto;
+        order: initial;
+        flex: 1; /* Ocupa espaço restante */
+        margin-right: 5px;
+    }
+
+    .seletor-resolucao {
+        width: auto;
+        padding: 4px 6px;
+        font-size: 0.75rem;
+    }
+
+    /* Remove espaçamentos da lista também */
+    .painel-lateral {
+        padding: 10px;
+        gap: 10px;
+        border-radius: 0;
+        margin-top: 5px;
     }
     
     .categorias-container {
-        justify-content: center;
+        justify-content: flex-start;
+        overflow-x: auto; /* Permite scroll se não couber tudo */
+        padding-bottom: 5px;
+        flex-wrap: nowrap;
     }
     
     .categoria-botao {
-        padding: 6px 12px;
-        font-size: 0.8rem;
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        flex-shrink: 0;
     }
+    
+    .item-canal {
+        padding: 8px 10px;
+        gap: 10px;
+    }
+    
+    .img-canal {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .info-item-canal h4 { font-size: 0.85rem; }
 }
 
 /* ==================== Input de Arquivo ==================== */

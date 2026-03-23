@@ -47,9 +47,8 @@ const server = http.createServer((req, res) => {
 
         const proxyReq = protocol.get(targetUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': '*/*',
-                'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+                'User-Agent': 'IPTVSmartersPlayer', // Disfarce p/ listas pagas não bloquearem
+                'Accept': '*/*, application/vnd.apple.mpegurl'
             },
             timeout: 30000
         }, (proxyRes) => {
@@ -142,7 +141,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
     console.log('');
     console.log('========================================');
-    console.log('  Reprodutor IPTV - Servidor Local');
+    console.log('  Nexus TV - Servidor Local');
     console.log('========================================');
     console.log('');
     console.log(`  Abra no navegador: http://localhost:${PORT}`);

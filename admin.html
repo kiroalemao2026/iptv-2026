@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Reprodutor IPTV</title>
+    <title>Painel Admin - Nexus TV</title>
     <link rel="stylesheet" href="estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -58,7 +58,7 @@
                 const data = await res.json();
                 if(data.success) {
                     msg.className = 'msg sucesso';
-                    msg.innerHTML = 'Lista atualizada com sucesso!<br><a href="/" style="color:var(--cor-destaque);">Ver o Reprodutor</a>';
+                    msg.innerHTML = 'Lista atualizada com sucesso!<br><a href="/" style="color:var(--cor-destaque);">Acessar Nexus TV</a>';
                 } else {
                     msg.className = 'msg erro';
                     msg.textContent = data.error || 'Erro desconhecido.';
