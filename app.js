@@ -97,12 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ==================== Cache Avançado (IndexedDB) ==================== */
 function openDB() {
     return new Promise((resolve, reject) => {
-        const req = indexedDB.open('IPTVCacheDB', 1);
+        // Versão 2: invalida cache antigo (corrige bug de IDs duplicados)
+        const req = indexedDB.open('IPTVCacheDB', 2);
         req.onupgradeneeded = (e) => {
             const db = e.target.result;
-            if (!db.objectStoreNames.contains('cache')) {
-                db.createObjectStore('cache');
+            // Apagar objectStore antigo se existir para limpar cache corrompido
+            if (db.objectStoreNames.contains('cache')) {
+                db.deleteObjectStore('cache');
             }
+            db.createObjectStore('cache');
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -452,7 +455,7 @@ function parsearM3U(texto) {
             const idMatch = linhaTrimada.match(/tvg-id="([^"]*)"/);
             
             canalAtual = {
-                id: idMatch ? idMatch[1] : gerarId(),
+                id: (idMatch && idMatch[1]) ? idMatch[1] + '_' + canais.length : gerarId(),
                 nome: nomeMatch ? nomeMatch[1].trim() : 'Canal sem nome',
                 logo: logoMatch ? logoMatch[1] : '',
                 grupo: grupoMatch ? grupoMatch[1] : 'Outros',
@@ -624,7 +627,8 @@ function renderizarCanais(append = false) {
     const html = canaisPagina.map(canal => `
         <div class="canal-item ${estado.canalAtual?.id === canal.id ? 'ativo' : ''} ${canal.favorito ? 'favorito' : ''}" 
              data-id="${canal.id}"
-             onclick="selecionarCanal('${canal.id}')">
+             data-index="${estado.canaisFiltrados.indexOf(canal)}"
+             onclick="selecionarCanalPorIndex(this.dataset.index)">
             <div class="canal-logo">
                 ${canal.logo 
                     ? `<img src="${canal.logo}" alt="${canal.nome}" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-tv\\'></i>'">` 
@@ -650,7 +654,19 @@ function renderizarCanais(append = false) {
 function selecionarCanal(id) {
     const canal = estado.canais.find(c => c.id === id);
     if (!canal) return;
-    
+    _selecionarCanalObj(canal, id);
+}
+
+// Seleciona canal pelo índice no array canaisFiltrados (evita bug com IDs duplicados/vazios)
+function selecionarCanalPorIndex(indexStr) {
+    const index = parseInt(indexStr, 10);
+    if (isNaN(index) || index < 0 || index >= estado.canaisFiltrados.length) return;
+    const canal = estado.canaisFiltrados[index];
+    if (!canal) return;
+    _selecionarCanalObj(canal, canal.id);
+}
+
+function _selecionarCanalObj(canal, id) {
     estado.canalAtual = canal;
     
     // Atualizar classe ativa no DOM manualmente em vez de re-renderizar todos os 100 da tela
@@ -710,117 +726,197 @@ function reproduzirCanal(canal) {
         urlOriginal = urlOriginal.replace('output=ts', 'output=m3u8');
     }
 
-    // URL Xtream Codes ao vivo: termina em número (sem extensão) ou .ts
-    // Exemplos:  servidor:porta/user/pass/12345
-    //            servidor:porta/user/pass/12345.ts
-    // Nesses casos, substituímos por .m3u8 para forçar HLS
-    function converterParaM3u8(u) {
-        // Remover .ts no final
-        if (/\.ts(\?.*)?$/.test(u)) {
-            return u.replace(/\.ts(\?.*)?$/, '.m3u8$1');
-        }
-        // URL sem extensão que parece Xtream (termina com /número)
-        if (/\/\d+$/.test(u)) {
-            return u + '.m3u8';
-        }
-        return null; // não é Xtream ao vivo
-    }
-
     const isMp4 = /\.mp4(\?.*)?$/i.test(urlOriginal);
     const isHLS = urlOriginal.includes('.m3u8') ||
                   urlOriginal.includes('/hls/') ||
                   urlOriginal.includes('output=m3u8');
-    const isXtreamLive = !isMp4 && !isHLS && (
-        /\.ts(\?.*)?$/.test(urlOriginal) ||   // stream .ts
-        /\/\d+$/.test(urlOriginal)             // URL sem extensão (ao vivo)
+    
+    // Filmes e séries Xtream (/movie/ ou /series/) são VOD — não live
+    const isVOD = /\/movie\//i.test(urlOriginal) || /\/series\//i.test(urlOriginal);
+    
+    const isXtreamLive = !isMp4 && !isHLS && !isVOD && (
+        /\.ts(\?.*)?$/.test(urlOriginal) ||
+        /\/\d+$/.test(urlOriginal)
     );
 
-    // Para canais ao vivo Xtream: tenta o HLS antes do TS bruto
-    let urlParaReproduzir = urlOriginal;
-    let urlHlsFallback = null;
+    // ── VOD (filmes / séries) ────────────────────────────────────────────────
+    // → reproduz direto via proxy sem cascata HLS
+    if (isMp4 || isVOD) {
+        reproduzirDireto(urlOriginal);
+        return;
+    }
 
-    if (isXtreamLive) {
-        const convertida = converterParaM3u8(urlOriginal);
-        if (convertida) {
-            urlParaReproduzir = convertida;  // usa .m3u8 como primeiro formato
-            urlHlsFallback = urlOriginal;     // guarda original como fallback
-            console.log('[NexusTV] 🔄 Ao vivo Xtream → HLS:', urlParaReproduzir);
+    // ── Gerar cascata de tentativas ──────────────────────────────────────────
+    // Cada entrada: { url, proxy, xhrProxy }
+    //   url      = URL a usar como source do HLS.js
+    //   proxy    = se true, envolve url no PROXY_LOCAL
+    //   xhrProxy = se true, também proxia segmentos .ts via xhrSetup
+    function gerarCascata(u) {
+        if (!isXtreamLive) return null; // usa fluxo normal
+
+        const urlBase = u.replace(/\.ts(\?.*)?$/, '').replace(/\.m3u8(\?.*)?$/, '');
+
+        // Gerar URL com /live/ mantendo o porto
+        let urlComLive = null;
+        try {
+            const parsed = new URL(urlBase);
+            const partes = parsed.pathname.split('/').filter(Boolean);
+            if (partes.length === 3 && !partes.includes('live')) {
+                parsed.pathname = '/live/' + partes.join('/');
+                urlComLive = parsed.href;
+            }
+        } catch(e) {}
+
+        return [
+            // 1. Direto (sem proxy) — browser tem IP residencial, servidor pode aceitar
+            { url: urlBase + '.m3u8',      proxy: false, xhrProxy: false, label: 'direto .m3u8' },
+            urlComLive ?
+            { url: urlComLive + '.m3u8',   proxy: false, xhrProxy: false, label: 'direto /live/.m3u8' } : null,
+            // 2. Via proxy — caso o servidor aceite mas tenha bloqueio CORS
+            { url: urlBase + '.m3u8',      proxy: true,  xhrProxy: true,  label: 'proxy .m3u8' },
+            urlComLive ?
+            { url: urlComLive + '.m3u8',   proxy: true,  xhrProxy: true,  label: 'proxy /live/.m3u8' } : null,
+            // 3. Manifesto sintético gerado no servidor (envolve TS numa playlist HLS)
+            { url: '/hls-ts?url=' + encodeURIComponent(u),
+                               proxy: false, xhrProxy: true,  label: 'manifesto sintético' },
+        ].filter(Boolean);
+    }
+
+    const cascata = gerarCascata(urlOriginal);
+    let indiceTentativa = 0;
+
+    function tentarProximaUrl() {
+        if (!cascata || indiceTentativa >= cascata.length) {
+            console.warn('[NexusTV] ⛔ Todas as tentativas falharam. Canal bloqueado.');
+            mostrarErro('Canal ao vivo indisponível no momento. Tente outro canal.');
+            return;
+        }
+
+        const tentativa = cascata[indiceTentativa];
+        indiceTentativa++;
+
+        const urlSource = tentativa.proxy
+            ? PROXY_LOCAL + encodeURIComponent(tentativa.url)
+            : tentativa.url;
+
+        console.log(`[NexusTV] ▶ Tentativa ${indiceTentativa} (${tentativa.label}): ${tentativa.url}`);
+
+        if (estado.hls) { estado.hls.destroy(); estado.hls = null; }
+
+        if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            estado.hls = new Hls({
+                maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
+                maxMaxBufferLength: 60,
+                enableWorker: true,
+                lowLatencyMode: true,
+                liveDurationInfinity: true,
+                manifestLoadingTimeOut: 8000,
+                manifestLoadingMaxRetry: 0,  // sem retry interno — nós controlamos
+                levelLoadingTimeOut: 8000,
+                fragLoadingTimeOut: 20000,
+                xhrSetup: tentativa.xhrProxy
+                    ? function(xhr, url) {
+                        if (url.startsWith('/proxy') || url.startsWith('/hls-ts') || url.includes('localhost')) return;
+                        xhr.open('GET', PROXY_LOCAL + encodeURIComponent(url), true);
+                      }
+                    : undefined
+            });
+
+            estado.hls.loadSource(urlSource);
+            estado.hls.attachMedia(elementos.player);
+
+            estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                console.log(`[NexusTV] ✅ Funcionou! (${tentativa.label})`);
+                esconderTodasTelas();
+                elementos.player.play().catch(e => console.warn('[NexusTV] Autoplay:', e.message));
+            });
+
+            estado.hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    console.warn(`[NexusTV] ❌ (${tentativa.label}): ${data.details}`);
+                    estado.hls.destroy();
+                    estado.hls = null;
+                    setTimeout(tentarProximaUrl, 200);
+                }
+            });
+
+        } else if (elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
+            elementos.player.src = urlSource;
+            elementos.player.addEventListener('loadedmetadata', () => {
+                esconderTodasTelas(); elementos.player.play();
+            }, { once: true });
+            elementos.player.addEventListener('error', () => tentarProximaUrl(), { once: true });
+        } else {
+            reproduzirDireto(urlOriginal);
         }
     }
 
-    const urlProxy = PROXY_LOCAL + encodeURIComponent(urlParaReproduzir);
-    console.log('[NexusTV] ▶ Reproduzindo:', urlParaReproduzir);
+    const usarHls = isHLS || isXtreamLive;
 
-    const usarHls = urlParaReproduzir.includes('.m3u8') ||
-                    urlParaReproduzir.includes('/hls/') ||
-                    isXtreamLive;  // ao vivo sempre tenta HLS.js
+    if (usarHls) {
+        if (isXtreamLive) {
+            tentarProximaUrl(); // cascata automática de 5 tentativas
+            return;
+        }
 
-    // ── HLS.js (Chrome, Firefox, Edge) ──────────────────────────────────────
-    if (usarHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        estado.hls = new Hls({
-            maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
-            maxMaxBufferLength: 60,
-            enableWorker: true,
-            lowLatencyMode: true,
-            liveDurationInfinity: true,
-            xhrSetup: function(xhr, url) {
-                if (url.startsWith('/proxy') || url.includes('/proxy?url=')) return;
-                xhr.open('GET', PROXY_LOCAL + encodeURIComponent(url), true);
-            }
-        });
+        // ── HLS.js para .m3u8 explícito (VOD, streams normais) ──────────────
+        if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            const urlProxy = PROXY_LOCAL + encodeURIComponent(urlOriginal);
+            console.log('[NexusTV] ▶ HLS direto:', urlOriginal);
 
-        estado.hls.loadSource(urlProxy);
-        estado.hls.attachMedia(elementos.player);
-
-        estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            esconderTodasTelas();
-            elementos.player.play().catch(e => console.warn('[NexusTV] Autoplay bloqueado:', e.message));
-        });
-
-        let tentativas = 0;
-        estado.hls.on(Hls.Events.ERROR, (event, data) => {
-            console.warn('[NexusTV] HLS Error:', data.type, data.details, data.fatal);
-
-            if (data.fatal) {
-                tentativas++;
-
-                // Tentar URL original como fallback depois de 2 tentativas
-                if (tentativas === 2 && urlHlsFallback) {
-                    console.log('[NexusTV] 🔁 Fallback: tentando TS direto via proxy');
-                    estado.hls.destroy();
-                    estado.hls = null;
-                    reproduzirDireto(urlHlsFallback);
-                    return;
+            estado.hls = new Hls({
+                maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
+                maxMaxBufferLength: 60,
+                enableWorker: true,
+                xhrSetup: function(xhr, url) {
+                    if (url.startsWith('/proxy') || url.includes('/proxy?url=')) return;
+                    xhr.open('GET', PROXY_LOCAL + encodeURIComponent(url), true);
                 }
+            });
 
-                if (tentativas > 3) {
-                    mostrarErro('Canal indisponível ou sem sinal. Tente outro canal.');
-                    return;
+            estado.hls.loadSource(urlProxy);
+            estado.hls.attachMedia(elementos.player);
+
+            estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                esconderTodasTelas();
+                elementos.player.play().catch(e => console.warn('[NexusTV] Autoplay bloqueado:', e.message));
+            });
+
+            let tentativas = 0;
+            estado.hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    tentativas++;
+                    if (tentativas > 3) {
+                        mostrarErro('Canal indisponível ou sem sinal.');
+                        return;
+                    }
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            setTimeout(() => estado.hls && estado.hls.startLoad(), 1200);
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            estado.hls.recoverMediaError();
+                            break;
+                        default:
+                            mostrarErro('Erro ao reproduzir o canal.');
+                    }
                 }
+            });
 
-                switch (data.type) {
-                    case Hls.ErrorTypes.NETWORK_ERROR:
-                        setTimeout(() => estado.hls && estado.hls.startLoad(), 1200);
-                        break;
-                    case Hls.ErrorTypes.MEDIA_ERROR:
-                        estado.hls.recoverMediaError();
-                        break;
-                    default:
-                        mostrarErro('Erro ao reproduzir o canal. Tente outro.');
-                }
-            }
-        });
-
-    // ── Safari HLS Nativo ────────────────────────────────────────────────────
-    } else if (usarHls && elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
-        elementos.player.src = urlProxy;
-        elementos.player.addEventListener('loadedmetadata', () => {
-            esconderTodasTelas();
-            elementos.player.play();
-        }, { once: true });
-        elementos.player.addEventListener('error', () => {
-            mostrarErro('Erro ao reproduzir no Safari.');
-        }, { once: true });
+        // ── Safari HLS nativo ────────────────────────────────────────────────
+        } else if (elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
+            const urlProxy = PROXY_LOCAL + encodeURIComponent(urlOriginal);
+            elementos.player.src = urlProxy;
+            elementos.player.addEventListener('loadedmetadata', () => {
+                esconderTodasTelas();
+                elementos.player.play();
+            }, { once: true });
+            elementos.player.addEventListener('error', () => {
+                mostrarErro('Erro ao reproduzir no Safari.');
+            }, { once: true });
+        } else {
+            reproduzirDireto(urlOriginal);
+        }
 
     // ── MP4 / Direto ─────────────────────────────────────────────────────────
     } else {
@@ -939,11 +1035,11 @@ function atualizarIconeVolume() {
 function proximoCanal() {
     if (!estado.canalAtual || estado.canaisFiltrados.length === 0) return;
     
-    const indiceAtual = estado.canaisFiltrados.findIndex(c => c.id === estado.canalAtual.id);
+    const indiceAtual = estado.canaisFiltrados.indexOf(estado.canalAtual);
     const proximoIndice = (indiceAtual + 1) % estado.canaisFiltrados.length;
-    const proximoCanal = estado.canaisFiltrados[proximoIndice];
+    const prox = estado.canaisFiltrados[proximoIndice];
     
-    selecionarCanal(proximoCanal.id);
+    _selecionarCanalObj(prox, prox.id);
 }
 
 function toggleTelaCheia() {
