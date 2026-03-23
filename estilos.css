@@ -921,7 +921,9 @@ body {
 /* ==================== Responsivo ==================== */
 @media (max-width: 1024px) {
     .conteudo-principal {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column-reverse; /* Player sempre em cima no celular */
+        gap: 20px;
     }
 
     .painel-lateral {
@@ -932,26 +934,32 @@ body {
 @media (max-width: 768px) {
     .cabecalho {
         flex-direction: column;
-        gap: 16px;
+        gap: 15px;
         text-align: center;
+        padding: 15px;
     }
 
     .controles-cabecalho {
         width: 100%;
         justify-content: center;
+        flex-wrap: wrap; /* Impede dos botões quebrarem o layout se for muito estreito */
     }
 
     .info-canal {
         flex-direction: column;
         text-align: center;
+        padding: 15px;
     }
 
     .acoes-canal {
         justify-content: center;
+        flex-wrap: wrap;
     }
 
     .controles-player {
         flex-wrap: wrap;
+        padding: 15px;
+        gap: 10px;
     }
 
     .controle.volume {
@@ -963,21 +971,43 @@ body {
         flex: 1;
         max-width: 200px;
     }
+    
+    .lista-canais {
+        max-height: 350px;
+    }
 }
 
 @media (max-width: 480px) {
     .container {
         padding: 10px;
     }
+    
+    .conteudo-principal {
+        gap: 15px;
+        min-height: auto;
+    }
 
     .cabecalho h1 {
-        font-size: 1.4rem;
+        font-size: 1.2rem;
     }
 
     .botao-primario,
     .botao-secundario {
-        padding: 10px 16px;
+        padding: 8px 12px;
         font-size: 0.85rem;
+    }
+    
+    .painel-lateral {
+        padding: 15px;
+    }
+    
+    .categorias-container {
+        justify-content: center;
+    }
+    
+    .categoria-botao {
+        padding: 6px 12px;
+        font-size: 0.8rem;
     }
 }
 
