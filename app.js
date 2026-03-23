@@ -685,18 +685,18 @@ function reproduzirCanal(canal) {
         mostrarErro('URL do canal não disponível');
         return;
     }
-    
+
     mostrarTela(elementos.telaCarregando);
     esconderTela(elementos.telaEspera);
     esconderTela(elementos.telaErro);
-    
-    // Destruir instância HLS anterior se existir
+
+    // Destruir instância HLS anterior
     if (estado.hls) {
         estado.hls.destroy();
         estado.hls = null;
     }
 
-    // Remover listeners antigos do player para evitar acúmulo
+    // Recriar o player para evitar acúmulo de listeners
     const novoPlayer = elementos.player.cloneNode(true);
     elementos.player.parentNode.replaceChild(novoPlayer, elementos.player);
     elementos.player = novoPlayer;
@@ -704,38 +704,68 @@ function reproduzirCanal(canal) {
 
     let urlOriginal = canal.url.trim();
 
-    // Converter output=ts para output=m3u8 (compatibilidade com navegadores)
+    // ── Normalização de URL ──────────────────────────────────────────────────
+    // output=ts → output=m3u8
     if (urlOriginal.includes('output=ts')) {
         urlOriginal = urlOriginal.replace('output=ts', 'output=m3u8');
     }
 
-    // Detectar tipo de stream
+    // URL Xtream Codes ao vivo: termina em número (sem extensão) ou .ts
+    // Exemplos:  servidor:porta/user/pass/12345
+    //            servidor:porta/user/pass/12345.ts
+    // Nesses casos, substituímos por .m3u8 para forçar HLS
+    function converterParaM3u8(u) {
+        // Remover .ts no final
+        if (/\.ts(\?.*)?$/.test(u)) {
+            return u.replace(/\.ts(\?.*)?$/, '.m3u8$1');
+        }
+        // URL sem extensão que parece Xtream (termina com /número)
+        if (/\/\d+$/.test(u)) {
+            return u + '.m3u8';
+        }
+        return null; // não é Xtream ao vivo
+    }
+
+    const isMp4 = /\.mp4(\?.*)?$/i.test(urlOriginal);
     const isHLS = urlOriginal.includes('.m3u8') ||
                   urlOriginal.includes('/hls/') ||
                   urlOriginal.includes('output=m3u8');
+    const isXtreamLive = !isMp4 && !isHLS && (
+        /\.ts(\?.*)?$/.test(urlOriginal) ||   // stream .ts
+        /\/\d+$/.test(urlOriginal)             // URL sem extensão (ao vivo)
+    );
 
-    // URL proxiada (sempre passar pelo proxy para contornar CORS e bloqueios)
-    const urlProxy = PROXY_LOCAL + encodeURIComponent(urlOriginal);
+    // Para canais ao vivo Xtream: tenta o HLS antes do TS bruto
+    let urlParaReproduzir = urlOriginal;
+    let urlHlsFallback = null;
 
-    console.log('[NexusTV] Reproduzindo:', urlOriginal);
-    console.log('[NexusTV] Via proxy:', urlProxy);
+    if (isXtreamLive) {
+        const convertida = converterParaM3u8(urlOriginal);
+        if (convertida) {
+            urlParaReproduzir = convertida;  // usa .m3u8 como primeiro formato
+            urlHlsFallback = urlOriginal;     // guarda original como fallback
+            console.log('[NexusTV] 🔄 Ao vivo Xtream → HLS:', urlParaReproduzir);
+        }
+    }
 
-    if (isHLS && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        // HLS.js para Chrome, Firefox, etc.
+    const urlProxy = PROXY_LOCAL + encodeURIComponent(urlParaReproduzir);
+    console.log('[NexusTV] ▶ Reproduzindo:', urlParaReproduzir);
+
+    const usarHls = urlParaReproduzir.includes('.m3u8') ||
+                    urlParaReproduzir.includes('/hls/') ||
+                    isXtreamLive;  // ao vivo sempre tenta HLS.js
+
+    // ── HLS.js (Chrome, Firefox, Edge) ──────────────────────────────────────
+    if (usarHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
         estado.hls = new Hls({
-            maxBufferLength: Math.max(estado.config.buffer, 10),
-            maxMaxBufferLength: Math.max(estado.config.buffer * 2, 30),
+            maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
+            maxMaxBufferLength: 60,
             enableWorker: true,
-            lowLatencyMode: false,
-            // xhrSetup correto: modifica a URL antes do xhr ser enviado
+            lowLatencyMode: true,
+            liveDurationInfinity: true,
             xhrSetup: function(xhr, url) {
-                // Não re-proxiar URLs que já estão passando pelo proxy
-                if (url.startsWith('/proxy') || url.startsWith(window.location.origin + '/proxy')) {
-                    return;
-                }
-                // Redirecionar TODOS os segmentos .ts e .m3u8 pelo proxy
-                const novaUrl = PROXY_LOCAL + encodeURIComponent(url);
-                xhr.open('GET', novaUrl, true);
+                if (url.startsWith('/proxy') || url.includes('/proxy?url=')) return;
+                xhr.open('GET', PROXY_LOCAL + encodeURIComponent(url), true);
             }
         });
 
@@ -744,57 +774,77 @@ function reproduzirCanal(canal) {
 
         estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
             esconderTodasTelas();
-            elementos.player.play().catch(err => {
-                console.warn('[NexusTV] Autoplay bloqueado:', err.message);
-            });
+            elementos.player.play().catch(e => console.warn('[NexusTV] Autoplay bloqueado:', e.message));
         });
 
-        let tentativasErro = 0;
+        let tentativas = 0;
         estado.hls.on(Hls.Events.ERROR, (event, data) => {
             console.warn('[NexusTV] HLS Error:', data.type, data.details, data.fatal);
+
             if (data.fatal) {
-                tentativasErro++;
-                if (tentativasErro > 3) {
+                tentativas++;
+
+                // Tentar URL original como fallback depois de 2 tentativas
+                if (tentativas === 2 && urlHlsFallback) {
+                    console.log('[NexusTV] 🔁 Fallback: tentando TS direto via proxy');
+                    estado.hls.destroy();
+                    estado.hls = null;
+                    reproduzirDireto(urlHlsFallback);
+                    return;
+                }
+
+                if (tentativas > 3) {
                     mostrarErro('Canal indisponível ou sem sinal. Tente outro canal.');
                     return;
                 }
+
                 switch (data.type) {
                     case Hls.ErrorTypes.NETWORK_ERROR:
-                        setTimeout(() => estado.hls && estado.hls.startLoad(), 1000);
+                        setTimeout(() => estado.hls && estado.hls.startLoad(), 1200);
                         break;
                     case Hls.ErrorTypes.MEDIA_ERROR:
                         estado.hls.recoverMediaError();
                         break;
                     default:
                         mostrarErro('Erro ao reproduzir o canal. Tente outro.');
-                        break;
                 }
             }
         });
 
-    } else if (isHLS && elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari — suporte HLS nativo
+    // ── Safari HLS Nativo ────────────────────────────────────────────────────
+    } else if (usarHls && elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
         elementos.player.src = urlProxy;
         elementos.player.addEventListener('loadedmetadata', () => {
             esconderTodasTelas();
             elementos.player.play();
         }, { once: true });
         elementos.player.addEventListener('error', () => {
-            mostrarErro('Erro ao reproduzir o canal no Safari.');
+            mostrarErro('Erro ao reproduzir no Safari.');
         }, { once: true });
 
+    // ── MP4 / Direto ─────────────────────────────────────────────────────────
     } else {
-        // Outros formatos: MP4, RTMP via proxy, TS direto, etc.
-        elementos.player.src = urlProxy;
-        elementos.player.load();
-        elementos.player.addEventListener('loadedmetadata', () => {
-            esconderTodasTelas();
-            elementos.player.play().catch(() => {});
-        }, { once: true });
-        elementos.player.addEventListener('error', () => {
-            mostrarErro('Formato de vídeo não suportado pelo navegador.');
-        }, { once: true });
+        reproduzirDireto(urlOriginal);
     }
+}
+
+// Reproduz uma URL diretamente via proxy (MP4, TS como último recurso, etc.)
+function reproduzirDireto(url) {
+    const urlProxy = PROXY_LOCAL + encodeURIComponent(url);
+    console.log('[NexusTV] 📹 Direto via proxy:', url);
+
+    elementos.player.src = urlProxy;
+    elementos.player.load();
+
+    elementos.player.addEventListener('loadedmetadata', () => {
+        esconderTodasTelas();
+        elementos.player.play().catch(() => {});
+    }, { once: true });
+
+    elementos.player.addEventListener('error', (e) => {
+        console.error('[NexusTV] Erro player direto:', e);
+        mostrarErro('Canal não suportado pelo navegador. Tente outro canal.');
+    }, { once: true });
 }
 
 // Reconfigura eventos do player após clonar o elemento
