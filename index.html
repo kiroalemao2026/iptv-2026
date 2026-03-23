@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reprodutor IPTV</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Cabeçalho -->
+        <header class="cabecalho">
+            <h1><i class="fas fa-tv"></i> Reprodutor IPTV</h1>
+            <div class="controles-cabecalho">
+                <button id="btn-adicionar-lista" class="botao-primario">
+                    <i class="fas fa-plus"></i> Adicionar Lista
+                </button>
+                <button id="btn-configuracoes" class="botao-secundario">
+                    <i class="fas fa-cog"></i> Configurações
+                </button>
+            </div>
+        </header>
+
+        <main class="conteudo-principal">
+            <!-- Painel de Listas -->
+            <aside class="painel-lateral">
+                <div class="secao">
+                    <h2>Minhas Listas</h2>
+                    <div id="listas-iptv" class="lista-container">
+                        <p class="mensagem-vazia">Nenhuma lista adicionada</p>
+                    </div>
+                </div>
+
+                <div class="secao">
+                    <h2>Categorias</h2>
+                    <div id="categorias" class="categorias-container">
+                        <button class="categoria-botao ativo" data-categoria="todos">
+                            <i class="fas fa-th"></i> Todos
+                        </button>
+                        <button class="categoria-botao" data-categoria="canais">
+                            <i class="fas fa-broadcast-tower"></i> Canais
+                        </button>
+                        <button class="categoria-botao" data-categoria="filmes">
+                            <i class="fas fa-film"></i> Filmes
+                        </button>
+                        <button class="categoria-botao" data-categoria="series">
+                            <i class="fas fa-tv"></i> Séries
+                        </button>
+                        <button class="categoria-botao" data-categoria="esportes">
+                            <i class="fas fa-futbol"></i> Esportes
+                        </button>
+                        <button class="categoria-botao" data-categoria="infantil">
+                            <i class="fas fa-child"></i> Infantil
+                        </button>
+                    </div>
+                </div>
+
+                <div class="secao">
+                    <h2>Canais</h2>
+                    <div class="busca-container">
+                        <input type="text" id="busca-canal" placeholder="Buscar canal..." class="campo-busca">
+                        <i class="fas fa-search icone-busca"></i>
+                    </div>
+                    <div id="lista-canais" class="lista-canais">
+                        <p class="mensagem-vazia">Selecione uma lista para ver os canais</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Área do Player -->
+            <section class="area-player">
+                <div class="player-container">
+                    <video id="player-video" controls>
+                        <p>Seu navegador não suporta a reprodução de vídeo.</p>
+                    </video>
+                    <div id="tela-espera" class="tela-espera">
+                        <i class="fas fa-tv icone-tv"></i>
+                        <h3>Bem-vindo ao Reprodutor IPTV</h3>
+                        <p>Selecione um canal da lista para começar a assistir</p>
+                    </div>
+                    <div id="tela-carregando" class="tela-carregando oculto">
+                        <div class="spinner"></div>
+                        <p>Carregando canal...</p>
+                    </div>
+                    <div id="tela-erro" class="tela-erro oculto">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Erro ao carregar o canal</h3>
+                        <p id="mensagem-erro">O canal não pôde ser reproduzido.</p>
+                        <button id="btn-tentar-novamente" class="botao-primario">
+                            <i class="fas fa-redo"></i> Tentar Novamente
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Informações do Canal Atual -->
+                <div class="info-canal">
+                    <div id="logo-canal" class="logo-canal">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                    <div class="detalhes-canal">
+                        <h3 id="nome-canal-atual">Nenhum canal selecionado</h3>
+                        <p id="grupo-canal-atual">-</p>
+                    </div>
+                    <div class="acoes-canal">
+                        <button id="btn-tela-cheia" class="botao-acao" title="Tela Cheia">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button id="btn-screenshot" class="botao-acao" title="Capturar Tela">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        <button id="btn-favorito" class="botao-acao" title="Favoritar">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Controles do Player -->
+                <div class="controles-player">
+                    <button id="btn-voltar-10" class="controle" title="Voltar 10s">
+                        <i class="fas fa-undo"></i> 10
+                    </button>
+                    <button id="btn-pausar" class="controle controle-principal" title="Pausar/Reproduzir">
+                        <i class="fas fa-play" id="icone-play"></i>
+                    </button>
+                    <button id="btn-avancar-10" class="controle" title="Avançar 10s">
+                        10 <i class="fas fa-redo"></i>
+                    </button>
+                    <div class="controle volume">
+                        <button id="btn-som" class="controle" title="Silenciar">
+                            <i class="fas fa-volume-up" id="icone-volume"></i>
+                        </button>
+                        <input type="range" id="controle-volume" min="0" max="100" value="100" class="slider-volume">
+                    </div>
+                    <button id="btn-proximo-canal" class="controle" title="Próximo Canal">
+                        <i class="fas fa-step-forward"></i>
+                    </button>
+                    <select id="seletor-resolucao" class="seletor-resolucao">
+                        <option value="auto">Auto</option>
+                        <option value="1080p">1080p</option>
+                        <option value="720p">720p</option>
+                        <option value="480p">480p</option>
+                        <option value="360p">360p</option>
+                    </select>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Adicionar Lista -->
+    <div id="modal-adicionar-lista" class="modal oculto">
+        <div class="modal-conteudo">
+            <div class="modal-cabecalho">
+                <h2><i class="fas fa-list"></i> Adicionar Lista IPTV</h2>
+                <button class="modal-fechar" id="fechar-modal-lista">&times;</button>
+            </div>
+            <div class="modal-corpo">
+                <div class="aviso-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>
+                        <strong>Para carregar listas por URL:</strong><br>
+                        1. Abra o terminal nesta pasta<br>
+                        2. Execute: <code style="background:var(--fundo-principal);padding:2px 6px;border-radius:4px">node server.js</code><br>
+                        3. Acesse: <code style="background:var(--fundo-principal);padding:2px 6px;border-radius:4px">http://localhost:3000</code><br><br>
+                        <strong>Sem Node.js?</strong> Faça upload do arquivo M3U diretamente.
+                    </p>
+                </div>
+                <form id="form-adicionar-lista">
+                    <div class="campo-formulario">
+                        <label for="nome-lista">Nome da Lista:</label>
+                        <input type="text" id="nome-lista" placeholder="Minha Lista IPTV" required>
+                    </div>
+                    <div class="campo-formulario">
+                        <label for="url-lista">URL da Lista M3U:</label>
+                        <input type="url" id="url-lista" placeholder="https://exemplo.com/lista.m3u">
+                        <small style="color: var(--texto-terciario); display: block; margin-top: 4px;">
+                            Ou faça upload de um arquivo M3U abaixo
+                        </small>
+                    </div>
+                    <div class="campo-formulario">
+                        <label for="arquivo-m3u">Ou Upload de Arquivo M3U:</label>
+                        <input type="file" id="arquivo-m3u" accept=".m3u,.m3u8" style="padding: 10px;">
+                    </div>
+                    <div class="campo-formulario">
+                        <label for="url-epg">URL do EPG (opcional):</label>
+                        <input type="url" id="url-epg" placeholder="https://exemplo.com/epg.xml">
+                    </div>
+                    <div class="campo-formulario">
+                        <label>
+                            <input type="checkbox" id="lista-favorita">
+                            Adicionar aos favoritos
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-rodape">
+                <button type="button" class="botao-secundario" id="btn-cancelar-lista">Cancelar</button>
+                <button type="submit" form="form-adicionar-lista" class="botao-primario" id="btn-salvar-lista">
+                    <i class="fas fa-save"></i> Salvar Lista
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurações -->
+    <div id="modal-configuracoes" class="modal oculto">
+        <div class="modal-conteudo modal-grande">
+            <div class="modal-cabecalho">
+                <h2><i class="fas fa-cog"></i> Configurações</h2>
+                <button class="modal-fechar" id="fechar-modal-config">&times;</button>
+            </div>
+            <div class="modal-corpo">
+                <div class="configuracoes-secao">
+                    <h3>Reprodução</h3>
+                    <div class="campo-formulario">
+                        <label>
+                            <input type="checkbox" id="config-auto-play" checked>
+                            Reproduzir automaticamente ao selecionar canal
+                        </label>
+                    </div>
+                    <div class="campo-formulario">
+                        <label>
+                            <input type="checkbox" id="config-continuar">
+                            Continuar de onde parou
+                        </label>
+                    </div>
+                    <div class="campo-formulario">
+                        <label for="config-buffer">Tamanho do Buffer (segundos):</label>
+                        <input type="number" id="config-buffer" value="3" min="1" max="30">
+                    </div>
+                </div>
+
+                <div class="configuracoes-secao">
+                    <h3>Aparência</h3>
+                    <div class="campo-formulario">
+                        <label for="config-tema">Tema:</label>
+                        <select id="config-tema">
+                            <option value="escuro">Escuro</option>
+                            <option value="claro">Claro</option>
+                            <option value="auto">Automático</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="configuracoes-secao">
+                    <h3>Dados</h3>
+                    <div class="campo-formulario">
+                        <button type="button" class="botao-perigo" id="btn-limpar-dados">
+                            <i class="fas fa-trash"></i> Limpar Todos os Dados
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-rodape">
+                <button type="button" class="botao-primario" id="btn-salvar-config">
+                    <i class="fas fa-save"></i> Salvar Configurações
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de Notificação -->
+    <div id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="app.js"></script>
+</body>
+</html>
