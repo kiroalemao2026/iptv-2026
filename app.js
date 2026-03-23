@@ -109,10 +109,40 @@ async function carregarDados() {
         const data = await response.json();
         
         if (data.url) {
-            mostrarToast('Sincronizando canais...', 'aviso');
-            elementos.listaCanais.innerHTML = '<div class="spinner"></div><p style="text-align:center;margin-top:10px;">Baixando canais...</p>';
-            
-            const canais = await carregarListaM3U(data.url);
+            const url = data.url;
+            const cacheKey = 'iptv_cache_canais';
+            const cacheURLKey = 'iptv_cache_url';
+            const cacheTimeKey = 'iptv_cache_time';
+            const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 horas
+
+            const cachedCanais = localStorage.getItem(cacheKey);
+            const cachedURL = localStorage.getItem(cacheURLKey);
+            const cachedTime = localStorage.getItem(cacheTimeKey);
+            const now = Date.now();
+
+            let canais = [];
+
+            if (cachedCanais && cachedURL === url && cachedTime && (now - parseInt(cachedTime)) < CACHE_DURATION) {
+                // Usar cache de ate 12 horas atrás
+                canais = JSON.parse(cachedCanais);
+            } else {
+                // Baixar integralmente de novo
+                mostrarToast('Sincronizando canais...', 'aviso');
+                elementos.listaCanais.innerHTML = '<div class="spinner"></div><p style="text-align:center;margin-top:10px;">Baixando lista de canais da Fonte...</p>';
+                
+                canais = await carregarListaM3U(url);
+                
+                // Tenta salvar localmente
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify(canais));
+                    localStorage.setItem(cacheURLKey, url);
+                    localStorage.setItem(cacheTimeKey, now.toString());
+                    mostrarToast(`Foram baixados e salvos ${canais.length} canais com sucesso!`, 'sucesso');
+                } catch (e) {
+                    console.warn('A lista é muito grande e não coube no cache do seu navegador local.');
+                    mostrarToast(`Foram carregados ${canais.length} canais!`, 'sucesso');
+                }
+            }
             
             estado.canais = canais.map(c => ({
                 ...c,
@@ -121,12 +151,12 @@ async function carregarDados() {
             estado.canaisFiltrados = [...estado.canais];
             
             renderizarCanais();
-            mostrarToast(`Foram carregados ${canais.length} canais com sucesso!`, 'sucesso');
         } else {
             elementos.listaCanais.innerHTML = '<p class="mensagem-vazia">O administrador ainda não cadastrou a lista IPTV oficial.</p>';
         }
     } catch (e) {
         elementos.listaCanais.innerHTML = '<p class="mensagem-vazia erro">Erro ao conectar com o servidor para buscar a lista.</p>';
+        console.error("Erro no load:", e);
     }
 }
 
