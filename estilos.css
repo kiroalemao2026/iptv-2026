@@ -922,19 +922,20 @@ body {
 @media (max-width: 1024px) {
     .conteudo-principal {
         display: flex;
-        flex-direction: column-reverse; /* Player sempre em cima no celular */
-        gap: 20px;
+        flex-direction: column-reverse;
+        gap: 16px;
     }
-
     .painel-lateral {
         max-height: none;
     }
+    .lista-canais {
+        max-height: 45vh;
+    }
 }
 
+
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
+    .container { padding: 10px; }
 
     .cabecalho {
         flex-direction: row;
@@ -942,23 +943,15 @@ body {
         padding: 12px 16px;
         margin-bottom: 12px;
     }
-    
-    .cabecalho h1 {
-        font-size: 1.2rem;
-    }
+    .cabecalho h1 { font-size: 1.2rem; }
 
     .botao-secundario, .botao-primario {
         padding: 8px 12px;
         font-size: 0.85rem;
     }
 
-    .conteudo-principal {
-        gap: 12px;
-    }
-
-    .area-player {
-        gap: 8px;
-    }
+    .conteudo-principal { gap: 12px; }
+    .area-player { gap: 10px; }
 
     .info-canal {
         flex-direction: row;
@@ -966,254 +959,278 @@ body {
         padding: 12px 16px;
         gap: 12px;
     }
-    
-    .logo-canal {
-        width: 48px;
-        height: 48px;
-    }
-
-    .detalhes-canal h3 {
-        font-size: 1rem;
-        margin-bottom: 2px;
-    }
-
-    .detalhes-canal p {
-        font-size: 0.8rem;
-    }
-
-    .acoes-canal {
-        flex-wrap: nowrap;
-        gap: 8px;
-    }
-    
-    .botao-acao {
-        width: 38px;
-        height: 38px;
-        font-size: 0.9rem;
-    }
+    .logo-canal { width: 48px; height: 48px; }
+    .detalhes-canal h3 { font-size: 1rem; margin-bottom: 2px; }
+    .detalhes-canal p { font-size: 0.8rem; }
+    .acoes-canal { flex-wrap: nowrap; gap: 8px; }
+    .botao-acao { width: 38px; height: 38px; font-size: 0.9rem; }
 
     .controles-player {
         flex-wrap: wrap;
         padding: 12px;
         gap: 10px;
     }
-
-    .controle-principal {
-        width: 50px;
-        height: 50px;
-        font-size: 1.1rem;
-    }
-
-    .controle {
-        padding: 8px 14px;
-        font-size: 0.85rem;
-    }
-
+    .controle-principal { width: 50px; height: 50px; font-size: 1.1rem; }
+    .controle { padding: 8px 14px; font-size: 0.85rem; }
     .controle.volume {
-        width: calc(100% - 10px);
-        justify-content: center;
-        order: 3; /* Vai para a linha de baixo */
-    }
-
-    .slider-volume {
+        width: auto;
         flex: 1;
-        max-width: none;
+        justify-content: flex-start;
+        order: initial;
+        max-width: 140px;
     }
-    
-    .seletor-resolucao {
-        padding: 8px 12px;
-        font-size: 0.85rem;
+    .slider-volume { flex: 1; }
+    .seletor-resolucao { padding: 8px 12px; font-size: 0.85rem; }
+    .lista-canais { max-height: 45vh; }
+
+    /* Categorias em 1 linha com scroll */
+    .categorias-container {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
     }
-    
-    .lista-canais {
-        max-height: 400px;
-    }
-    
-    .tela-espera {
-        padding: 20px;
-    }
-    
-    .tela-espera .icone-tv {
-        font-size: 2.5rem;
-        margin-bottom: -5px;
-    }
-    
-    .tela-espera h3 {
-        font-size: 1.1rem;
-    }
+    .categorias-container::-webkit-scrollbar { display: none; }
+    .categoria-botao { flex-shrink: 0; }
+
+    .tela-espera { padding: 20px; }
+    .tela-espera .icone-tv { font-size: 2.5rem; }
+    .tela-espera h3 { font-size: 1.1rem; }
 }
 
+/* ===== MOBILE: Layout Tipo App (< 480px) ===== */
 @media (max-width: 480px) {
-    /* Full width viewport app-like experience */
+
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
     body { padding: 0; margin: 0; }
+
     .container {
         padding: 0;
         max-width: 100vw;
+        height: 100dvh;        /* Dynamic viewport height (handles browser bars) */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         border-radius: 0;
     }
-    
+
+    /* --- Cabeçalho slim --- */
     .cabecalho {
-        padding: 8px 10px;
+        flex-shrink: 0;
         flex-direction: row;
         justify-content: space-between;
-        gap: 5px;
+        align-items: center;
+        padding: 10px 14px;
         margin-bottom: 0;
         border-radius: 0;
+        gap: 8px;
         border-bottom: 1px solid var(--borda);
+        z-index: 10;
     }
-
-    .cabecalho h1 {
-        font-size: 1rem;
-    }
-
+    .cabecalho h1 { font-size: 1rem; gap: 7px; }
+    .controles-cabecalho { gap: 6px; }
     .botao-secundario, .botao-primario {
-        padding: 6px 10px;
+        padding: 7px 10px;
         font-size: 0.75rem;
+        gap: 4px;
     }
 
+    /* --- Conteúdo principal: coluna, sem overflow externo --- */
     .conteudo-principal {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
         gap: 0;
-        border-radius: 0;
+        overflow: hidden;
+        min-height: 0;
     }
 
+    /* --- Área do player: não cresce, tamanho natural --- */
     .area-player {
-        gap: 0; /* Remove completamente os buracos entre o player e a info */
-        border-radius: 0;
+        flex-shrink: 0;
+        gap: 0;
     }
 
-    /* Player colado na borda */
+    /* --- Player 16:9 sem bordas arredondadas --- */
     .player-container {
         border-radius: 0;
+        aspect-ratio: 16 / 9;
+        width: 100%;
     }
 
+    /* Telas internas do player */
     .tela-espera {
-        padding: 15px;
+        padding: 12px;
     }
     .tela-espera .icone-tv { font-size: 2rem; }
-    .tela-espera h3 { font-size: 1rem; margin: 5px 0; }
+    .tela-espera h3 { font-size: 0.95rem; margin: 6px 0 2px; }
+    .tela-espera p { font-size: 0.78rem; }
 
-    /* Barra de Informação */
+    /* --- Info do canal: barra compacta 1 linha --- */
     .info-canal {
-        padding: 6px 10px;
-        gap: 8px;
+        flex-shrink: 0;
+        padding: 8px 12px;
+        gap: 10px;
         flex-wrap: nowrap;
         align-items: center;
         border-radius: 0;
-        background: var(--fundo-terciario); /* Ligeiramente mais escuro */
-        border-top: 1px solid var(--fundo-principal);
+        background: var(--fundo-secundario);
+        border-bottom: 1px solid var(--borda);
+        box-shadow: none;
     }
-    
+    .logo-canal {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        border-radius: 8px;
+    }
     .detalhes-canal {
-        flex: 1 1 auto;
-        text-align: left;
-        margin-bottom: 0;
+        flex: 1;
         overflow: hidden;
+        margin-bottom: 0;
     }
-    
     .detalhes-canal h3 {
         font-size: 0.85rem;
+        font-weight: 700;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
+        line-height: 1.2;
     }
-    
     .detalhes-canal p {
         font-size: 0.7rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         margin: 0;
+        color: var(--texto-terciario);
     }
-    
-    .logo-canal {
-        margin: 0;
-        width: 32px;
-        height: 32px;
-        flex-shrink: 0;
-        border-radius: 50%;
-    }
+    .acoes-canal { flex-shrink: 0; gap: 4px; }
+    .botao-acao { width: 30px; height: 30px; font-size: 0.75rem; }
 
-    .acoes-canal {
-        width: auto;
-        justify-content: flex-end;
-        flex-shrink: 0;
-        gap: 4px;
-    }
-    
-    .botao-acao {
-        width: 28px;
-        height: 28px;
-        font-size: 0.75rem;
-    }
-    
-    /* Controles colados com a Info */
+    /* --- Controles: 1 linha compacta --- */
     .controles-player {
+        flex-shrink: 0;
         padding: 8px 10px;
-        gap: 6px;
-        justify-content: space-between; /* Espalha numa linha */
+        gap: 5px;
+        justify-content: space-between;
         flex-wrap: nowrap;
         border-radius: 0;
-        background: var(--fundo-terciario);
+        background: var(--fundo-secundario);
+        border-bottom: 1px solid var(--borda);
     }
-
-    /* Força os botões principais de controle a diminuírem e caberem n mesma linha */
     .controle {
-        padding: 4px 8px;
-        font-size: 0.8rem;
+        padding: 6px 10px;
+        font-size: 0.78rem;
+        gap: 4px;
+        border-radius: 8px;
     }
-
     .controle-principal {
-        width: 36px;
-        height: 36px;
-        font-size: 0.9rem;
-    }
-
-    .controle.volume {
-        width: auto;
-        order: initial;
-        flex: 1; /* Ocupa espaço restante */
-        margin-right: 5px;
-    }
-
-    .seletor-resolucao {
-        width: auto;
-        padding: 4px 6px;
-        font-size: 0.75rem;
-    }
-
-    /* Remove espaçamentos da lista também */
-    .painel-lateral {
-        padding: 10px;
-        gap: 10px;
-        border-radius: 0;
-        margin-top: 5px;
-    }
-    
-    .categorias-container {
-        justify-content: flex-start;
-        overflow-x: auto; /* Permite scroll se não couber tudo */
-        padding-bottom: 5px;
-        flex-wrap: nowrap;
-    }
-    
-    .categoria-botao {
-        padding: 5px 10px;
-        font-size: 0.75rem;
+        width: 38px;
+        height: 38px;
+        font-size: 0.95rem;
         flex-shrink: 0;
     }
-    
-    .item-canal {
-        padding: 8px 10px;
+    /* Volume: compacto com slider */
+    .controle.volume {
+        order: initial;
+        width: auto;
+        flex: 1;
+        max-width: 115px;
+        padding: 6px 8px;
+        gap: 5px;
+        justify-content: flex-start;
+    }
+    .slider-volume {
+        flex: 1;
+        width: 100%;
+        height: 4px;
+    }
+    .seletor-resolucao {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        border-radius: 8px;
+        max-width: 65px;
+    }
+
+    /* --- Painel lateral: cresce e rola --- */
+    .painel-lateral {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 10px 12px;
         gap: 10px;
+        border-radius: 0;
+        margin-top: 0;
+        -webkit-overflow-scrolling: touch;
     }
-    
-    .img-canal {
-        width: 35px;
-        height: 35px;
+
+    /* Esconde "Suas Listas" no mobile (reduz poluição visual) */
+    .painel-lateral > .secao:first-child {
+        display: none;
     }
-    
-    .info-item-canal h4 { font-size: 0.85rem; }
+
+    .secao h2 { font-size: 0.9rem; margin-bottom: 10px; }
+
+    /* --- Categorias: scroll horizontal sem quebra --- */
+    .categorias-container {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 6px;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin-bottom: 2px;
+    }
+    .categorias-container::-webkit-scrollbar { display: none; }
+    .categoria-botao {
+        flex-shrink: 0;
+        padding: 6px 12px;
+        font-size: 0.78rem;
+    }
+
+    /* --- Busca --- */
+    .busca-container { margin-bottom: 8px; }
+    .campo-busca {
+        padding: 10px 14px 10px 38px;
+        font-size: 0.88rem;
+        border-radius: 10px;
+    }
+
+    /* --- Lista de canais: sem altura fixa, rola junto com o painel --- */
+    .lista-canais {
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
+        gap: 5px;
+    }
+
+    /* --- Item de canal compacto --- */
+    .canal-item {
+        padding: 10px 12px;
+        gap: 10px;
+        border-radius: 10px;
+    }
+    .canal-logo { width: 38px; height: 38px; border-radius: 8px; }
+    .canal-nome { font-size: 0.85rem; }
+    .canal-grupo { font-size: 0.7rem; }
+
+    /* --- Toast mobile --- */
+    #toast-container {
+        bottom: 12px;
+        right: 12px;
+        left: 12px;
+    }
+    .toast {
+        min-width: unset;
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.85rem;
+    }
 }
 
 /* ==================== Input de Arquivo ==================== */

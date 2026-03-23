@@ -41,42 +41,82 @@ const server = http.createServer((req, res) => {
             return;
         }
 
-        console.log(`Proxy: ${targetUrl}`);
+        console.log(`[Proxy] -> ${targetUrl}`);
 
-        const protocol = targetUrl.startsWith('https') ? https : http;
+        function fazerRequisicao(targetUrl, tentativas) {
+            if (tentativas > 5) {
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Muitos redirecionamentos' }));
+                return;
+            }
 
-        const proxyReq = protocol.get(targetUrl, {
-            headers: {
-                'User-Agent': 'IPTVSmartersPlayer', // Disfarce p/ listas pagas não bloquearem
-                'Accept': '*/*, application/vnd.apple.mpegurl'
-            },
-            timeout: 30000
-        }, (proxyRes) => {
-            // Copiar headers de resposta
-            const headers = { ...proxyRes.headers };
-            delete headers['content-security-policy'];
-            delete headers['x-frame-options'];
-            
-            res.writeHead(proxyRes.statusCode, {
-                ...headers,
-                'Access-Control-Allow-Origin': '*'
+            const protocol = targetUrl.startsWith('https') ? https : http;
+
+            const proxyReq = protocol.get(targetUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': '*/*',
+                    'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+                    'Connection': 'keep-alive'
+                },
+                timeout: 30000
+            }, (proxyRes) => {
+                // Seguir redirecionamentos (301, 302, 307, 308)
+                if ([301, 302, 307, 308].includes(proxyRes.statusCode) && proxyRes.headers.location) {
+                    const novaUrl = proxyRes.headers.location;
+                    console.log(`[Proxy] Redirect ${proxyRes.statusCode} -> ${novaUrl}`);
+                    proxyRes.resume(); // Descartar body do redirect
+                    fazerRequisicao(novaUrl, tentativas + 1);
+                    return;
+                }
+
+                // Definir Content-Type correto para HLS
+                let contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
+                if (targetUrl.includes('.m3u8') || targetUrl.includes('output=m3u8')) {
+                    contentType = 'application/vnd.apple.mpegurl';
+                } else if (targetUrl.endsWith('.ts') || targetUrl.includes('/ts/') || targetUrl.includes('output=ts')) {
+                    contentType = 'video/mp2t';
+                } else if (targetUrl.endsWith('.mp4')) {
+                    contentType = 'video/mp4';
+                }
+
+                // Remover headers problemáticos
+                const headers = { ...proxyRes.headers };
+                delete headers['content-security-policy'];
+                delete headers['x-frame-options'];
+                delete headers['content-length']; // Evita truncamento em conteúdo dinâmico
+                delete headers['transfer-encoding'];
+
+                res.writeHead(proxyRes.statusCode, {
+                    ...headers,
+                    'Content-Type': contentType,
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': '*',
+                    'Cache-Control': 'no-cache'
+                });
+
+                proxyRes.pipe(res);
             });
-            
-            proxyRes.pipe(res);
-        });
 
-        proxyReq.on('error', (err) => {
-            console.error('Proxy error:', err.message);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: err.message }));
-        });
+            proxyReq.on('error', (err) => {
+                console.error('[Proxy] Erro:', err.message, '| URL:', targetUrl);
+                if (!res.headersSent) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: err.message }));
+                }
+            });
 
-        proxyReq.on('timeout', () => {
-            proxyReq.destroy();
-            res.writeHead(504, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Timeout' }));
-        });
+            proxyReq.on('timeout', () => {
+                proxyReq.destroy();
+                console.error('[Proxy] Timeout | URL:', targetUrl);
+                if (!res.headersSent) {
+                    res.writeHead(504, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Timeout' }));
+                }
+            });
+        }
 
+        fazerRequisicao(targetUrl, 0);
         return;
     }
 

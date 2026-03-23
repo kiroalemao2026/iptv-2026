@@ -83,6 +83,10 @@ const elementos = {
     toastContainer: document.getElementById('toast-container')
 };
 
+// ==================== Proxy Local ====================
+// Aponta para o endpoint /proxy?url= do servidor Node.js local
+const PROXY_LOCAL = '/proxy?url=';
+
 // ==================== Inicialização ====================
 document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
@@ -148,7 +152,14 @@ async function carregarDados() {
         const data = await response.json();
         
         if (data.url) {
-            const url = data.url;
+            // Conversão vital para Navegadores: Se a lista iptv for output=ts, 
+            // navegadores não conseguem renderizar nativamente sem travar/falhar. 
+            // Mas output=m3u8 funciona muito bem no hls.js!
+            let url = data.url;
+            if (url.includes('output=ts')) {
+                url = url.replace('output=ts', 'output=m3u8');
+            }
+
             const cacheKey = 'iptv_cache_canais';
             const cacheURLKey = 'iptv_cache_url';
             const cacheTimeKey = 'iptv_cache_time';
@@ -243,6 +254,14 @@ function configurarEventos() {
     
     // Busca
     elementos.buscaCanal.addEventListener('input', filtrarCanais);
+    
+    // Scroll infinito para renderizar mais canais quando chega perto do fim
+    elementos.listaCanais.addEventListener('scroll', () => {
+        // Se rolou até os últimos 100px
+        if (elementos.listaCanais.scrollHeight - elementos.listaCanais.scrollTop <= elementos.listaCanais.clientHeight + 100) {
+            renderizarCanais(true); // Faz append
+        }
+    });
     
     // Categorias
     elementos.categorias.addEventListener('click', (e) => {
@@ -369,9 +388,6 @@ function lerArquivo(arquivo) {
         reader.readAsText(arquivo);
     });
 }
-
-// Proxy local (servidor node.js)
-const PROXY_LOCAL = '/proxy?url=';
 
 async function carregarListaM3U(url) {
     if (!url.startsWith('http')) {
@@ -581,13 +597,31 @@ function removerLista(id) {
 }
 
 // ==================== Gerenciamento de Canais ====================
-function renderizarCanais() {
+let paginaAtualCanais = 1;
+const CANAIS_POR_PAGINA = 100;
+
+function renderizarCanais(append = false) {
+    if (!append) {
+        paginaAtualCanais = 1;
+        elementos.listaCanais.scrollTop = 0;
+    } else {
+        paginaAtualCanais++;
+    }
+
     if (estado.canaisFiltrados.length === 0) {
         elementos.listaCanais.innerHTML = '<p class="mensagem-vazia">Nenhum canal encontrado</p>';
         return;
     }
     
-    elementos.listaCanais.innerHTML = estado.canaisFiltrados.map(canal => `
+    const inicio = (paginaAtualCanais - 1) * CANAIS_POR_PAGINA;
+    const fim = inicio + CANAIS_POR_PAGINA;
+    const canaisPagina = estado.canaisFiltrados.slice(inicio, fim);
+
+    if (append && canaisPagina.length === 0) {
+        return; // Não tem mais nada para renderizar
+    }
+
+    const html = canaisPagina.map(canal => `
         <div class="canal-item ${estado.canalAtual?.id === canal.id ? 'ativo' : ''} ${canal.favorito ? 'favorito' : ''}" 
              data-id="${canal.id}"
              onclick="selecionarCanal('${canal.id}')">
@@ -605,6 +639,12 @@ function renderizarCanais() {
             </div>
         </div>
     `).join('');
+
+    if (append) {
+        elementos.listaCanais.insertAdjacentHTML('beforeend', html);
+    } else {
+        elementos.listaCanais.innerHTML = html;
+    }
 }
 
 function selecionarCanal(id) {
@@ -612,7 +652,13 @@ function selecionarCanal(id) {
     if (!canal) return;
     
     estado.canalAtual = canal;
-    renderizarCanais();
+    
+    // Atualizar classe ativa no DOM manualmente em vez de re-renderizar todos os 100 da tela
+    const itensAntigos = elementos.listaCanais.querySelectorAll('.canal-item.ativo');
+    itensAntigos.forEach(i => i.classList.remove('ativo'));
+    const novoAtivo = elementos.listaCanais.querySelector(`.canal-item[data-id="${id}"]`);
+    if (novoAtivo) novoAtivo.classList.add('ativo');
+
     
     // Atualizar info
     elementos.nomeCanalAtual.textContent = canal.nome;
@@ -649,60 +695,125 @@ function reproduzirCanal(canal) {
         estado.hls.destroy();
         estado.hls = null;
     }
-    
-    const url = canal.url;
-    
-    // Verificar se é HLS
-    if (url.includes('.m3u8')) {
-        if (Hls.isSupported()) {
-            estado.hls = new Hls({
-                maxBufferLength: estado.config.buffer,
-                maxMaxBufferLength: estado.config.buffer * 2
-            });
-            
-            estado.hls.loadSource(url);
-            estado.hls.attachMedia(elementos.player);
-            
-            estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                esconderTodasTelas();
-                elementos.player.play().catch(() => {
-                    // Autoplay bloqueado
-                });
-            });
-            
-            estado.hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            estado.hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            estado.hls.recoverMediaError();
-                            break;
-                        default:
-                            mostrarErro('Erro ao reproduzir o canal');
-                            break;
-                    }
+
+    // Remover listeners antigos do player para evitar acúmulo
+    const novoPlayer = elementos.player.cloneNode(true);
+    elementos.player.parentNode.replaceChild(novoPlayer, elementos.player);
+    elementos.player = novoPlayer;
+    reconfigurarEventosPlayer();
+
+    let urlOriginal = canal.url.trim();
+
+    // Converter output=ts para output=m3u8 (compatibilidade com navegadores)
+    if (urlOriginal.includes('output=ts')) {
+        urlOriginal = urlOriginal.replace('output=ts', 'output=m3u8');
+    }
+
+    // Detectar tipo de stream
+    const isHLS = urlOriginal.includes('.m3u8') ||
+                  urlOriginal.includes('/hls/') ||
+                  urlOriginal.includes('output=m3u8');
+
+    // URL proxiada (sempre passar pelo proxy para contornar CORS e bloqueios)
+    const urlProxy = PROXY_LOCAL + encodeURIComponent(urlOriginal);
+
+    console.log('[NexusTV] Reproduzindo:', urlOriginal);
+    console.log('[NexusTV] Via proxy:', urlProxy);
+
+    if (isHLS && typeof Hls !== 'undefined' && Hls.isSupported()) {
+        // HLS.js para Chrome, Firefox, etc.
+        estado.hls = new Hls({
+            maxBufferLength: Math.max(estado.config.buffer, 10),
+            maxMaxBufferLength: Math.max(estado.config.buffer * 2, 30),
+            enableWorker: true,
+            lowLatencyMode: false,
+            // xhrSetup correto: modifica a URL antes do xhr ser enviado
+            xhrSetup: function(xhr, url) {
+                // Não re-proxiar URLs que já estão passando pelo proxy
+                if (url.startsWith('/proxy') || url.startsWith(window.location.origin + '/proxy')) {
+                    return;
                 }
+                // Redirecionar TODOS os segmentos .ts e .m3u8 pelo proxy
+                const novaUrl = PROXY_LOCAL + encodeURIComponent(url);
+                xhr.open('GET', novaUrl, true);
+            }
+        });
+
+        estado.hls.loadSource(urlProxy);
+        estado.hls.attachMedia(elementos.player);
+
+        estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            esconderTodasTelas();
+            elementos.player.play().catch(err => {
+                console.warn('[NexusTV] Autoplay bloqueado:', err.message);
             });
-        } else if (elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
-            // Safari nativo
-            elementos.player.src = url;
-            elementos.player.addEventListener('loadedmetadata', () => {
-                esconderTodasTelas();
-                elementos.player.play();
-            });
-        } else {
-            mostrarErro('Seu navegador não suporta HLS');
-        }
-    } else {
-        // Outros formatos (MP4, etc.)
-        elementos.player.src = url;
+        });
+
+        let tentativasErro = 0;
+        estado.hls.on(Hls.Events.ERROR, (event, data) => {
+            console.warn('[NexusTV] HLS Error:', data.type, data.details, data.fatal);
+            if (data.fatal) {
+                tentativasErro++;
+                if (tentativasErro > 3) {
+                    mostrarErro('Canal indisponível ou sem sinal. Tente outro canal.');
+                    return;
+                }
+                switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                        setTimeout(() => estado.hls && estado.hls.startLoad(), 1000);
+                        break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                        estado.hls.recoverMediaError();
+                        break;
+                    default:
+                        mostrarErro('Erro ao reproduzir o canal. Tente outro.');
+                        break;
+                }
+            }
+        });
+
+    } else if (isHLS && elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari — suporte HLS nativo
+        elementos.player.src = urlProxy;
         elementos.player.addEventListener('loadedmetadata', () => {
             esconderTodasTelas();
             elementos.player.play();
         }, { once: true });
+        elementos.player.addEventListener('error', () => {
+            mostrarErro('Erro ao reproduzir o canal no Safari.');
+        }, { once: true });
+
+    } else {
+        // Outros formatos: MP4, RTMP via proxy, TS direto, etc.
+        elementos.player.src = urlProxy;
+        elementos.player.load();
+        elementos.player.addEventListener('loadedmetadata', () => {
+            esconderTodasTelas();
+            elementos.player.play().catch(() => {});
+        }, { once: true });
+        elementos.player.addEventListener('error', () => {
+            mostrarErro('Formato de vídeo não suportado pelo navegador.');
+        }, { once: true });
     }
+}
+
+// Reconfigura eventos do player após clonar o elemento
+function reconfigurarEventosPlayer() {
+    elementos.player.addEventListener('play', () => {
+        elementos.iconePlay.className = 'fas fa-pause';
+    });
+    elementos.player.addEventListener('pause', () => {
+        elementos.iconePlay.className = 'fas fa-play';
+    });
+    elementos.player.addEventListener('waiting', () => {
+        mostrarTela(elementos.telaCarregando);
+    });
+    elementos.player.addEventListener('playing', () => {
+        esconderTodasTelas();
+    });
+    elementos.player.addEventListener('error', () => {
+        // Silencioso aqui — tratado no reproduzirCanal
+    });
 }
 
 function filtrarCanais() {
