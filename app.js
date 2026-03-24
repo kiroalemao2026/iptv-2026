@@ -412,13 +412,23 @@ async function carregarListaM3U(url) {
         throw new Error('URL inválida');
     }
 
+    // 1ª tentativa: rota dedicada /buscar-lista com headers anti-403
     try {
-        console.log('Buscando lista via proxy local...');
+        console.log('Buscando lista via /buscar-lista (headers browser completos)...');
+        const texto = await fetchComTimeout('/buscar-lista?url=' + encodeURIComponent(url), 60000);
+        return parsearM3U(texto);
+    } catch (erro1) {
+        console.warn('Falha /buscar-lista:', erro1.message, '— tentando /proxy...');
+    }
+
+    // 2ª tentativa: proxy genérico (fallback)
+    try {
+        console.log('Buscando lista via /proxy (fallback)...');
         const texto = await fetchComTimeout(PROXY_LOCAL + encodeURIComponent(url), 60000);
         return parsearM3U(texto);
-    } catch (erro) {
-        console.error('Erro:', erro.message);
-        throw new Error('Não foi possível carregar a lista. Verifique se o servidor node está rodando.');
+    } catch (erro2) {
+        console.error('Erro (ambas tentativas falharam):', erro2.message);
+        throw new Error('Não foi possível carregar a lista. O servidor remoto pode estar bloqueando o acesso (403). Verifique a URL ou tente novamente.');
     }
 }
 

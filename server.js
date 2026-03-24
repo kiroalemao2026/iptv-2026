@@ -1,4 +1,4 @@
-﻿const http = require('http');
+const http = require('http');
 const https = require('https');
 const url = require('url');
 const path = require('path');
@@ -325,6 +325,137 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({ error: 'Erro nos dados enviados.' }));
             }
         });
+        return;
+    }
+
+    // ============================================================
+    // Buscar Lista M3U (rota dedicada com headers anti-403)
+    // GET /buscar-lista?url=...
+    // ============================================================
+    if (req.url.startsWith('/buscar-lista?')) {
+        const parsedUrl = url.parse(req.url, true);
+        let targetUrl = parsedUrl.query.url;
+
+        if (!targetUrl) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'URL não fornecida' }));
+            return;
+        }
+
+        // Decodifica se veio codificado duplo
+        try { targetUrl = decodeURIComponent(targetUrl); } catch(e) {}
+
+        console.log(`[BuscarLista] -> ${targetUrl}`);
+
+        // Pool de User-Agents realistas para rotação
+        const userAgents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        ];
+        const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
+
+        let targetOrigin = '';
+        try { const p = new URL(targetUrl); targetOrigin = p.origin; } catch(e) {}
+
+        const isHttps = targetUrl.startsWith('https');
+        const protocol = isHttps ? https : http;
+
+        const reqOptions = {
+            agent: isHttps ? httpsAgent : httpAgent,
+            headers: {
+                'User-Agent': ua,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Accept-Encoding': 'identity',
+                'Connection': 'keep-alive',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'DNT': '1',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                ...(targetOrigin ? { 'Referer': targetOrigin + '/' } : {}),
+            },
+            timeout: 30000
+        };
+
+        function tentarBuscarLista(urlAlvo, tentativas) {
+            if (tentativas > 5) {
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Muitos redirecionamentos' }));
+                return;
+            }
+
+            const isHttpsAlvo = urlAlvo.startsWith('https');
+            const proto = isHttpsAlvo ? https : http;
+
+            const reqAlvo = proto.get(urlAlvo, { ...reqOptions, agent: isHttpsAlvo ? httpsAgent : httpAgent }, (proxyRes) => {
+                // Seguir redirects
+                if ([301, 302, 307, 308].includes(proxyRes.statusCode) && proxyRes.headers.location) {
+                    let novaUrl = proxyRes.headers.location;
+                    if (novaUrl.startsWith('/')) {
+                        try { const p = new URL(urlAlvo); novaUrl = p.origin + novaUrl; } catch(e) {}
+                    }
+                    console.log(`[BuscarLista] Redirect ${proxyRes.statusCode} -> ${novaUrl}`);
+                    proxyRes.resume();
+                    tentarBuscarLista(novaUrl, tentativas + 1);
+                    return;
+                }
+
+                if (proxyRes.statusCode !== 200) {
+                    console.error(`[BuscarLista] Erro HTTP ${proxyRes.statusCode} | URL: ${urlAlvo}`);
+                    proxyRes.resume();
+                    res.writeHead(proxyRes.statusCode, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                    res.end(JSON.stringify({ error: `Servidor remoto retornou ${proxyRes.statusCode}` }));
+                    return;
+                }
+
+                let body = '';
+                proxyRes.setEncoding('utf8');
+                proxyRes.on('data', chunk => { body += chunk; });
+                proxyRes.on('end', () => {
+                    console.log(`[BuscarLista] OK - ${body.length} bytes de ${urlAlvo}`);
+                    res.writeHead(200, {
+                        'Content-Type': 'application/vnd.apple.mpegurl; charset=utf-8',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Headers': '*',
+                        'Cache-Control': 'no-cache'
+                    });
+                    res.end(body);
+                });
+                proxyRes.on('error', (err) => {
+                    console.error('[BuscarLista] Erro lendo resposta:', err.message);
+                    if (!res.headersSent) { res.writeHead(500); res.end('Erro ao ler resposta'); }
+                });
+            });
+
+            reqAlvo.on('error', (err) => {
+                console.error(`[BuscarLista] Erro de conexão: ${err.message} | URL: ${urlAlvo}`);
+                if (!res.headersSent) {
+                    res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                    res.end(JSON.stringify({ error: err.message }));
+                }
+            });
+
+            reqAlvo.on('timeout', () => {
+                reqAlvo.destroy();
+                console.error('[BuscarLista] Timeout | URL:', urlAlvo);
+                if (!res.headersSent) {
+                    res.writeHead(504, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                    res.end(JSON.stringify({ error: 'Timeout ao buscar lista' }));
+                }
+            });
+        }
+
+        tentarBuscarLista(targetUrl, 0);
         return;
     }
 
