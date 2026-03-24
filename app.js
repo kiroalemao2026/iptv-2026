@@ -472,7 +472,13 @@ function parsearM3U(texto) {
                 favorito: false
             };
         } else if (linhaTrimada && !linhaTrimada.startsWith('#') && canalAtual) {
-            canalAtual.url = linhaTrimada;
+            let urlCanal = linhaTrimada;
+            // Se o servidor reescreveu o URL com /proxy?url=, extrair o URL original
+            // Isso evita duplo-proxy ao reproduzir o canal
+            if (urlCanal.startsWith('/proxy?url=')) {
+                try { urlCanal = decodeURIComponent(urlCanal.slice('/proxy?url='.length)); } catch(e) {}
+            }
+            canalAtual.url = urlCanal;
             canais.push(canalAtual);
             canalAtual = null;
         }
@@ -1015,9 +1021,18 @@ function reproduzirCanal(canal) {
     }
 }
 
+// Garante que uma URL seja envolvida pelo proxy SEM duplicar
+function proxyUrl(url) {
+    // Se já é uma URL de proxy local, não encapsula de novo
+    if (url.startsWith('/proxy?url=') || url.startsWith('/hls-ts?')) {
+        return url;
+    }
+    return PROXY_LOCAL + encodeURIComponent(url);
+}
+
 // Reproduz uma URL diretamente via proxy (MP4, TS como último recurso, etc.)
 function reproduzirDireto(url) {
-    const urlProxy = PROXY_LOCAL + encodeURIComponent(url);
+    const urlProxy = proxyUrl(url);
     console.log('[NexusTV] 📹 Direto via proxy:', url);
 
     elementos.player.src = urlProxy;

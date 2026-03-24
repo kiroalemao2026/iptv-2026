@@ -41,12 +41,18 @@ const server = http.createServer((req, res) => {
     // Proxy endpoint
     if (req.url.startsWith('/proxy?')) {
         const parsedUrl = url.parse(req.url, true);
-        const targetUrl = parsedUrl.query.url;
+        let targetUrl = parsedUrl.query.url;
 
         if (!targetUrl) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'URL não fornecida' }));
             return;
+        }
+
+        // Proteção contra duplo-proxy: /proxy?url=/proxy?url=http://...
+        // Desencapsula até chegar na URL real
+        while (targetUrl.startsWith('/proxy?url=')) {
+            try { targetUrl = decodeURIComponent(targetUrl.slice('/proxy?url='.length)); } catch(e) { break; }
         }
 
         console.log(`[Proxy] -> ${targetUrl}`);
