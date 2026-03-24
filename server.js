@@ -519,7 +519,6 @@ const server = http.createServer((req, res) => {
                     'Connection': 'keep-alive',
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
-                    ...(targetOrigin ? { 'Referer': targetOrigin + '/', 'Origin': targetOrigin } : {}),
                     ...(req.headers['range'] ? { 'Range': req.headers['range'] } : {})
                 },
                 timeout: isLiveStream ? 15000 : 8000
