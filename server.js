@@ -55,13 +55,6 @@ const server = http.createServer((req, res) => {
             try { targetUrl = decodeURIComponent(targetUrl.slice('/proxy?url='.length)); } catch(e) { break; }
         }
 
-        // Se estamos em HTTPS (Railway), forçar HTTPS na URL alvo para evitar Mixed Content
-        // Muitos servidores IPTV aceitam HTTPS na mesma porta ou na 443
-        const isHttpsServer = req.headers['x-forwarded-proto'] === 'https';
-        if (isHttpsServer && targetUrl.startsWith('http://')) {
-            targetUrl = targetUrl.replace('http://', 'https://');
-        }
-
         console.log(`[Proxy] -> ${targetUrl}`);
 
         function fazerRequisicao(targetUrl, tentativas) {

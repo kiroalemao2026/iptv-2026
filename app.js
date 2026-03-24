@@ -777,10 +777,9 @@ function reproduzirCanal(canal) {
     );
 
     // ── VOD (filmes / séries) ────────────────────────────────────────────────
-    // Tenta: 1) HLS.js com proxy (muitos VOD Xtream são HLS disfarçado)
-    //        2) Player nativo via proxy (MP4 direto)
+    // → reproduz direto via proxy sem cascata HLS
     if (isMp4 || isVOD) {
-        reproduzirVOD(urlOriginal);
+        reproduzirDireto(urlOriginal);
         return;
     }
 
