@@ -7,97 +7,190 @@
     <link rel="stylesheet" href="estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ===== TELA DE SENHA ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+        /* ===== TELA DE SENHA PREMIUM ===== */
         #tela-senha {
             position: fixed;
             inset: 0;
-            background: #0d0f1a;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            background: #060810;
+        }
+
+        /* Fundo animado com gradiente radial */
+        #tela-senha::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 20%, rgba(108,99,255,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(0,212,255,0.14) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 50% 100%, rgba(108,99,255,0.08) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+        @keyframes bgPulse {
+            from { opacity: 0.7; }
+            to   { opacity: 1; }
+        }
+
+        /* Grade tecnológica no fundo */
+        #tela-senha::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
         .senha-card {
-            background: #161927;
-            border: 1px solid #2a2f4a;
-            border-radius: 20px;
-            padding: 44px 40px;
+            position: relative;
+            z-index: 1;
+            background: rgba(16, 18, 35, 0.85);
+            border: 1px solid rgba(108,99,255,0.25);
+            border-radius: 28px;
+            padding: 48px 44px 40px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             text-align: center;
-            box-shadow: 0 24px 80px rgba(0,0,0,0.7);
-            animation: fadeInUp 0.5s ease;
+            box-shadow:
+                0 32px 100px rgba(0,0,0,0.8),
+                0 0 0 1px rgba(255,255,255,0.04) inset,
+                0 0 60px rgba(108,99,255,0.08);
+            backdrop-filter: blur(20px);
+            animation: cardEntrada 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes cardEntrada {
+            from { opacity: 0; transform: translateY(40px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Logo com brilho pulsante */
+        .logo-wrapper {
+            position: relative;
+            display: inline-flex;
+            margin-bottom: 24px;
+        }
+
+        .logo-glow {
+            position: absolute;
+            inset: -12px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(108,99,255,0.5) 0%, transparent 70%);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50%       { transform: scale(1.2); opacity: 1; }
         }
 
         .senha-card .logo-icon {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, #6c63ff, #00d4ff);
-            border-radius: 50%;
+            position: relative;
+            width: 88px;
+            height: 88px;
+            background: linear-gradient(145deg, #7c73ff, #00d4ff);
+            border-radius: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 30px;
+            font-size: 36px;
             color: #fff;
-            box-shadow: 0 8px 24px rgba(108,99,255,0.4);
+            box-shadow:
+                0 12px 40px rgba(108,99,255,0.5),
+                0 0 0 8px rgba(108,99,255,0.1);
+        }
+
+        .senha-card .logo-icon i { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+
+        /* Badge premium */
+        .badge-premium {
+            display: inline-block;
+            background: linear-gradient(90deg, rgba(108,99,255,0.2), rgba(0,212,255,0.2));
+            border: 1px solid rgba(108,99,255,0.3);
+            border-radius: 100px;
+            padding: 4px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #a0a8e0;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
         }
 
         .senha-card h2 {
-            font-size: 22px;
-            font-weight: 800;
-            background: linear-gradient(90deg, #6c63ff, #00d4ff);
+            font-size: 30px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #a89fff, #00d4ff);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 6px;
+            letter-spacing: -0.5px;
         }
 
-        .senha-card p {
-            font-size: 14px;
-            color: #9ba3c7;
-            margin-bottom: 28px;
+        .senha-card .subtitulo {
+            font-size: 13.5px;
+            color: #6b7494;
+            margin-bottom: 32px;
+            font-weight: 500;
         }
 
-        /* Campos de dígito individuais */
+        /* Divisor */
+        .divisor {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(108,99,255,0.3), transparent);
+            margin: 28px 0;
+        }
+
+        /* Campos de dígito */
         .digitos {
             display: flex;
             gap: 10px;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .digito {
-            width: 52px;
-            height: 64px;
-            background: #1e2236;
-            border: 2px solid #2a2f4a;
-            border-radius: 12px;
+            width: 54px;
+            height: 66px;
+            background: rgba(30, 34, 60, 0.8);
+            border: 2px solid rgba(60, 68, 100, 0.6);
+            border-radius: 14px;
             color: #e8eaf6;
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 900;
             text-align: center;
-            font-family: 'Courier New', monospace;
+            font-family: 'Inter', monospace;
             outline: none;
             transition: all 0.2s;
             caret-color: #6c63ff;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3) inset;
         }
 
-        .digito:focus { border-color: #6c63ff; background: #1a1d30; box-shadow: 0 0 0 3px rgba(108,99,255,0.2); }
-        .digito.preenchido { border-color: #00d4ff; }
+        .digito:focus {
+            border-color: #6c63ff;
+            background: rgba(108,99,255,0.1);
+            box-shadow: 0 0 0 3px rgba(108,99,255,0.2), 0 2px 12px rgba(0,0,0,0.3) inset;
+            transform: translateY(-2px);
+        }
+        .digito.preenchido {
+            border-color: rgba(0,212,255,0.6);
+            background: rgba(0,212,255,0.06);
+        }
 
         .btn-acessar {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #6c63ff, #483cdb);
+            padding: 16px;
+            background: linear-gradient(135deg, #6c63ff 0%, #4d45d0 100%);
             border: none;
-            border-radius: 10px;
+            border-radius: 14px;
             color: #fff;
             font-size: 15px;
             font-weight: 700;
@@ -106,44 +199,86 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 16px rgba(108,99,255,0.35);
+            transition: all 0.25s;
+            box-shadow: 0 6px 24px rgba(108,99,255,0.4), 0 1px 0 rgba(255,255,255,0.1) inset;
+            letter-spacing: 0.3px;
         }
 
-        .btn-acessar:hover { filter: brightness(1.15); transform: translateY(-2px); }
+        .btn-acessar:hover  { filter: brightness(1.12); transform: translateY(-2px); box-shadow: 0 10px 32px rgba(108,99,255,0.55); }
         .btn-acessar:active { transform: translateY(0); }
-        .btn-acessar:disabled { opacity: 0.6; cursor: default; transform: none; }
+        .btn-acessar:disabled { opacity: 0.5; cursor: default; transform: none; }
 
         #msg-senha-err {
             margin-top: 14px;
             font-size: 13px;
-            color: #ff4d4d;
+            color: #ff6b6b;
             min-height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
+            font-weight: 500;
         }
+
+        /* Botão de suporte */
+        .btn-suporte-wa {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 13px 18px;
+            background: rgba(37,211,102,0.1);
+            border: 1px solid rgba(37,211,102,0.3);
+            border-radius: 14px;
+            color: #25D366;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px rgba(37,211,102,0.1);
+        }
+        .btn-suporte-wa:hover {
+            background: rgba(37,211,102,0.18);
+            border-color: rgba(37,211,102,0.5);
+            transform: translateY(-1px);
+        }
+        .btn-suporte-wa i { font-size: 20px; }
+
+        .texto-suporte {
+            font-size: 12.5px;
+            color: #4a5070;
+            margin-top: 16px;
+            font-weight: 500;
+        }
+        .texto-suporte span { color: #6c63ff; font-weight: 700; cursor: pointer; }
 
         .shake { animation: shake 0.4s ease; }
         @keyframes shake {
             0%,100% { transform: translateX(0); }
-            20% { transform: translateX(-8px); }
-            40% { transform: translateX(8px); }
-            60% { transform: translateX(-6px); }
-            80% { transform: translateX(6px); }
+            20%      { transform: translateX(-8px); }
+            40%      { transform: translateX(8px); }
+            60%      { transform: translateX(-6px); }
+            80%      { transform: translateX(6px); }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== TELA DE SENHA (aparece antes do player) ===== -->
+    <!-- ===== TELA DE SENHA PREMIUM ===== -->
     <div id="tela-senha">
         <div class="senha-card">
-            <div class="logo-icon"><i class="fas fa-tv"></i></div>
-            <h2>Nexus TV</h2>
-            <p>Digite sua senha de acesso de 6 dígitos</p>
+            <!-- Logo -->
+            <div class="logo-wrapper">
+                <div class="logo-glow"></div>
+                <div class="logo-icon"><i class="fas fa-satellite-dish"></i></div>
+            </div>
 
+            <div class="badge-premium">✦ Acesso Exclusivo</div>
+            <h2>Nexus TV</h2>
+            <p class="subtitulo">Insira seu código de acesso de 6 dígitos</p>
+
+            <!-- Campos -->
             <div class="digitos">
                 <input class="digito" type="tel" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]">
                 <input class="digito" type="tel" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]">
@@ -154,21 +289,20 @@
             </div>
 
             <button class="btn-acessar" id="btn-acessar" onclick="validarSenha()">
-                <i class="fas fa-unlock"></i> Acessar
+                <i class="fas fa-unlock-alt"></i> Entrar
             </button>
 
             <p id="msg-senha-err"></p>
 
-            <!-- Botão WhatsApp suporte -->
-            <div id="btn-suporte-inicial" style="display:none; margin-top:18px;">
-                <a id="link-suporte-inicial" href="#" target="_blank"
-                    style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;
-                    background:#25D366;border-radius:10px;color:#fff;text-decoration:none;
-                    font-size:14px;font-weight:700;transition:filter 0.2s;"
-                    onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
-                    <i class="fab fa-whatsapp" style="font-size:18px;"></i> Falar com Suporte
-                </a>
-            </div>
+            <div class="divisor"></div>
+
+            <!-- Botão Suporte WhatsApp - sempre visível -->
+            <a id="link-suporte-inicial" href="#" target="_blank" class="btn-suporte-wa">
+                <i class="fab fa-whatsapp"></i>
+                Solicitar Acesso via WhatsApp
+            </a>
+
+            <p class="texto-suporte">Ainda não tem acesso? <span onclick="document.getElementById('link-suporte-inicial').click()">Fale conosco</span></p>
         </div>
     </div>
 
@@ -179,16 +313,13 @@
         const DIGITOS = ['d1','d2','d3','d4','d5','d6'];
         let _whatsappSuporte = ''; // Carregado da API
 
-        // Carrega WhatsApp do suporte
+        // Carrega WhatsApp do suporte e seta link do botão
         fetch('/api/public-config').then(r => r.json()).then(cfg => {
             if (cfg.whatsapp) {
-                _whatsappSuporte = cfg.whatsapp.replace(/\D/g, '');
-                const msgInicial = encodeURIComponent('Olá! Preciso de ajuda para acessar o Nexus TV.');
-                const linkInicial = document.getElementById('link-suporte-inicial');
-                if (linkInicial) {
-                    linkInicial.href = `https://wa.me/${_whatsappSuporte}?text=${msgInicial}`;
-                    document.getElementById('btn-suporte-inicial').style.display = 'block';
-                }
+                const num = cfg.whatsapp.replace(/\D/g, '');
+                const msg = encodeURIComponent('Olá! Gostaria de solicitar acesso ao Nexus TV. 📺');
+                const link = document.getElementById('link-suporte-inicial');
+                if (link) link.href = `https://wa.me/${num}?text=${msg}`;
             }
         }).catch(() => {});
 
