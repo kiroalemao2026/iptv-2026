@@ -579,7 +579,8 @@ const server = http.createServer((req, res) => {
                 // 403 persistente: tentar versão HTTPS da URL HTTP (alguns servidores exigem)
                 if (proxyRes.statusCode === 403 && targetUrl.startsWith('http://') && perfilIdx >= PERFIS_HEADERS.length - 1) {
                     proxyRes.resume();
-                    const urlHttps = targetUrl.replace('http://', 'https://');
+                    // Remove porta 80 explícita (incompatível com HTTPS)
+                    const urlHttps = targetUrl.replace('http://', 'https://').replace(/:80\//, '/').replace(/:80$/, '');
                     console.warn(`[Proxy] 403 persistente → tentando HTTPS: ${urlHttps}`);
                     setTimeout(() => fazerRequisicao(urlHttps, tentativas + 1, 0), 300);
                     return;
@@ -665,20 +666,37 @@ const server = http.createServer((req, res) => {
             });
 
             proxyReq.on('error', (err) => {
-                console.error(`[Proxy] Erro: ${err.message} | Código: ${err.code} | URL: ${targetUrl}`);
-                if (!res.headersSent) {
-                    res.writeHead(500, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: err.message, code: err.code }));
+                console.error(`[Proxy] Erro conexão (perfil ${perfilIdx}): ${err.message} | URL: ${targetUrl}`);
+                if (res.headersSent) return; // resposta já enviada, ignorar
+
+                // Se ainda há perfis para tentar, usar próximo
+                if (perfilIdx < PERFIS_HEADERS.length - 1) {
+                    const proximoPerfil = perfilIdx + 1;
+                    console.warn(`[Proxy] Tentando perfil ${proximoPerfil} após erro de conexão`);
+                    setTimeout(() => fazerRequisicao(targetUrl, tentativas + 1, proximoPerfil), 300);
+                    return;
                 }
+
+                // Esgotou perfis: retornar erro
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: err.message, code: err.code }));
             });
 
             proxyReq.on('timeout', () => {
                 proxyReq.destroy();
-                console.error('[Proxy] Timeout | URL:', targetUrl);
-                if (!res.headersSent) {
-                    res.writeHead(504, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'Timeout' }));
+                console.error(`[Proxy] Timeout (perfil ${perfilIdx}) | URL: ${targetUrl}`);
+                if (res.headersSent) return;
+
+                // Timeout: tentar próximo perfil
+                if (perfilIdx < PERFIS_HEADERS.length - 1) {
+                    const proximoPerfil = perfilIdx + 1;
+                    console.warn(`[Proxy] Tentando perfil ${proximoPerfil} após timeout`);
+                    setTimeout(() => fazerRequisicao(targetUrl, tentativas + 1, proximoPerfil), 300);
+                    return;
                 }
+
+                res.writeHead(504, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Timeout após múltiplas tentativas' }));
             });
         }
 
