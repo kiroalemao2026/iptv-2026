@@ -804,16 +804,33 @@ function reproduzirCanal(canal) {
             }
         } catch(e) {}
 
+        // Se a página está em HTTPS e o stream é HTTP, evita Mixed Content:
+        // começa direto pelo proxy (browser bloquearia o HTTP antes mesmo de tentar)
+        const paginaSegura = location.protocol === 'https:';
+        const streamInseguro = u.startsWith('http://');
+        const evitarDireto = paginaSegura && streamInseguro;
+
+        if (evitarDireto) {
+            return [
+                // Só proxy — direto seria bloqueado como Mixed Content
+                { url: urlBase + '.m3u8',    proxy: true, xhrProxy: true, label: 'proxy .m3u8' },
+                urlComLive ?
+                { url: urlComLive + '.m3u8', proxy: true, xhrProxy: true, label: 'proxy /live/.m3u8' } : null,
+                // Manifesto sintético (último recurso)
+                { url: '/hls-ts?url=' + encodeURIComponent(u), proxy: false, xhrProxy: true, label: 'manifesto sintético' },
+            ].filter(Boolean);
+        }
+
         return [
-            // 1. Direto (sem proxy) — browser tem IP residencial, servidor pode aceitar
+            // 1. Direto — browser com IP residencial, servidor pode aceitar
             { url: urlBase + '.m3u8',      proxy: false, xhrProxy: false, label: 'direto .m3u8' },
             urlComLive ?
             { url: urlComLive + '.m3u8',   proxy: false, xhrProxy: false, label: 'direto /live/.m3u8' } : null,
-            // 2. Via proxy — caso o servidor aceite mas tenha bloqueio CORS
+            // 2. Via proxy — caso tenha bloqueio CORS
             { url: urlBase + '.m3u8',      proxy: true,  xhrProxy: true,  label: 'proxy .m3u8' },
             urlComLive ?
             { url: urlComLive + '.m3u8',   proxy: true,  xhrProxy: true,  label: 'proxy /live/.m3u8' } : null,
-            // 3. Manifesto sintético gerado no servidor (envolve TS numa playlist HLS)
+            // 3. Manifesto sintético (último recurso)
             { url: '/hls-ts?url=' + encodeURIComponent(u),
                                proxy: false, xhrProxy: true,  label: 'manifesto sintético' },
         ].filter(Boolean);
@@ -898,11 +915,19 @@ function reproduzirCanal(canal) {
 
     // Adicionar entrada para HLS explícito (.m3u8) na cascata se ainda não estiver lá
     if (isHLS && !isXtreamLive && cascata === null) {
-        // Reconstruir cascata HLS simples: proxy + sem proxy
-        const hlsCascata = [
-            { url: urlOriginal, proxy: true,  xhrProxy: true,  label: 'proxy .m3u8' },
-            { url: urlOriginal, proxy: false, xhrProxy: false, label: 'direto .m3u8' },
-        ];
+        // HLS direto — no HTTPS sempre vai pelo proxy primeiro para evitar Mixed Content
+        const paginaSegura = location.protocol === 'https:';
+        const streamInseguro = urlOriginal.startsWith('http://');
+        const evitarDireto = paginaSegura && streamInseguro;
+
+        const hlsCascata = evitarDireto
+            ? [
+                { url: urlOriginal, proxy: true,  xhrProxy: true,  label: 'proxy .m3u8' },
+              ]
+            : [
+                { url: urlOriginal, proxy: true,  xhrProxy: true,  label: 'proxy .m3u8' },
+                { url: urlOriginal, proxy: false, xhrProxy: false, label: 'direto .m3u8' },
+              ];
         // Usar cascata manual
         let idx = 0;
         function tentarHls() {
