@@ -486,10 +486,54 @@ const server = http.createServer((req, res) => {
 
         console.log(`[Proxy] -> ${targetUrl}`);
 
-        function fazerRequisicao(targetUrl, tentativas) {
-            if (tentativas > 5) {
+        // Perfis de headers para tentar em caso de 403/401 (simula clientes IPTV legítimos)
+        const PERFIS_HEADERS = [
+            // Perfil 0: Browser Chrome padrão
+            {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8',
+                'Accept-Encoding': 'identity',
+                'Connection': 'keep-alive',
+                'Cache-Control': 'no-cache',
+            },
+            // Perfil 1: VLC Media Player
+            {
+                'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
+                'Accept': '*/*',
+                'Accept-Encoding': 'identity',
+                'Connection': 'keep-alive',
+                'Icy-MetaData': '1',
+            },
+            // Perfil 2: IPTV Smarters / Android player
+            {
+                'User-Agent': 'okhttp/4.9.0',
+                'Accept': '*/*',
+                'Accept-Encoding': 'identity',
+                'Connection': 'keep-alive',
+            },
+            // Perfil 3: Kodi
+            {
+                'User-Agent': 'Kodi/20.2 (Windows NT 10.0; WOW64) App_Bitness/64 Version/20.2-Git:20230812-5b4d2df8bd',
+                'Accept': '*/*',
+                'Accept-Encoding': 'identity',
+                'Connection': 'keep-alive',
+            },
+            // Perfil 4: TiviMate
+            {
+                'User-Agent': 'TiviMate/4.7.0',
+                'Accept': '*/*',
+                'Accept-Encoding': 'identity',
+                'Connection': 'keep-alive',
+            },
+        ];
+
+        function fazerRequisicao(targetUrl, tentativas, perfilIdx) {
+            perfilIdx = perfilIdx || 0;
+
+            if (tentativas > 8) {
                 res.writeHead(502, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Muitos redirecionamentos' }));
+                res.end(JSON.stringify({ error: 'Servidor bloqueou o acesso (403/502 após múltiplas tentativas)' }));
                 return;
             }
 
@@ -500,28 +544,15 @@ const server = http.createServer((req, res) => {
             let targetOrigin = '';
             try { const p = new URL(targetUrl); targetOrigin = p.origin; } catch(e) {}
 
-            const userAgents = [
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0',
-                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            ];
-            const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
+            const perfilHeaders = PERFIS_HEADERS[perfilIdx % PERFIS_HEADERS.length];
 
             const reqOptions = {
                 agent: isHttps ? httpsAgent : httpAgent,
                 headers: {
-                    'User-Agent': ua,
-                    'Accept': '*/*',
-                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-                    'Accept-Encoding': 'identity',
-                    'Connection': 'keep-alive',
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache',
+                    ...perfilHeaders,
                     ...(req.headers['range'] ? { 'Range': req.headers['range'] } : {})
                 },
-                timeout: isLiveStream ? 15000 : 8000
+                timeout: isLiveStream ? 15000 : 10000
             };
 
             const proxyReq = protocol.get(targetUrl, reqOptions, (proxyRes) => {
@@ -532,7 +563,25 @@ const server = http.createServer((req, res) => {
                     }
                     console.log(`[Proxy] Redirect ${proxyRes.statusCode} -> ${novaUrl}`);
                     proxyRes.resume();
-                    fazerRequisicao(novaUrl, tentativas + 1);
+                    fazerRequisicao(novaUrl, tentativas + 1, perfilIdx);
+                    return;
+                }
+
+                // 403 / 401 → tentar próximo perfil de headers (simula cliente IPTV diferente)
+                if ((proxyRes.statusCode === 403 || proxyRes.statusCode === 401) && perfilIdx < PERFIS_HEADERS.length - 1) {
+                    proxyRes.resume();
+                    const proximoPerfil = perfilIdx + 1;
+                    console.warn(`[Proxy] ${proxyRes.statusCode} com perfil ${perfilIdx} → tentando perfil ${proximoPerfil} (UA: ${PERFIS_HEADERS[proximoPerfil]['User-Agent'].split('/')[0]})`);
+                    setTimeout(() => fazerRequisicao(targetUrl, tentativas + 1, proximoPerfil), 300);
+                    return;
+                }
+
+                // 403 persistente: tentar versão HTTPS da URL HTTP (alguns servidores exigem)
+                if (proxyRes.statusCode === 403 && targetUrl.startsWith('http://') && perfilIdx >= PERFIS_HEADERS.length - 1) {
+                    proxyRes.resume();
+                    const urlHttps = targetUrl.replace('http://', 'https://');
+                    console.warn(`[Proxy] 403 persistente → tentando HTTPS: ${urlHttps}`);
+                    setTimeout(() => fazerRequisicao(urlHttps, tentativas + 1, 0), 300);
                     return;
                 }
 
@@ -633,7 +682,7 @@ const server = http.createServer((req, res) => {
             });
         }
 
-        fazerRequisicao(targetUrl, 0);
+        fazerRequisicao(targetUrl, 0, 0);
         return;
     }
 
