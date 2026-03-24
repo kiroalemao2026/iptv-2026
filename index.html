@@ -249,9 +249,9 @@
 
         function liberarAcesso(codigo, nome) {
             // Salva na sessão (com o código para poder re-validar)
-            sessionStorage.setItem('nexus_acesso', '1');
-            sessionStorage.setItem('nexus_codigo', codigo);
-            sessionStorage.setItem('nexus_nome', nome);
+            localStorage.setItem('nexus_acesso', '1');
+            localStorage.setItem('nexus_codigo', codigo);
+            localStorage.setItem('nexus_nome', nome);
             document.getElementById('tela-senha').style.transition = 'opacity 0.4s';
             document.getElementById('tela-senha').style.opacity = '0';
             setTimeout(() => { document.getElementById('tela-senha').remove(); }, 420);
@@ -286,9 +286,9 @@
             if (video) { video.pause(); video.src = ''; }
 
             // Limpa a sessão
-            sessionStorage.removeItem('nexus_acesso');
-            sessionStorage.removeItem('nexus_codigo');
-            sessionStorage.removeItem('nexus_nome');
+            localStorage.removeItem('nexus_acesso');
+            localStorage.removeItem('nexus_codigo');
+            localStorage.removeItem('nexus_nome');
 
             // Cria/recria a tela de senha
             let tela = document.getElementById('tela-senha');
@@ -399,14 +399,14 @@
         }
 
         // Se já validou nesta sessão, libera direto e inicia verificação periódica
-        const _codigoSalvo = sessionStorage.getItem('nexus_codigo');
-        if (sessionStorage.getItem('nexus_acesso') === '1' && _codigoSalvo) {
+        const _codigoSalvo = localStorage.getItem('nexus_codigo');
+        if (localStorage.getItem('nexus_acesso') === '1' && _codigoSalvo) {
             document.getElementById('tela-senha').remove();
             iniciarVerificacaoPeriodica(_codigoSalvo);
         } else {
             // Limpa qualquer sessão incompleta
-            sessionStorage.removeItem('nexus_acesso');
-            sessionStorage.removeItem('nexus_codigo');
+            localStorage.removeItem('nexus_acesso');
+            localStorage.removeItem('nexus_codigo');
             document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('d1').focus();
             });
