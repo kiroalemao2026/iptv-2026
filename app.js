@@ -1149,20 +1149,58 @@ function reproduzirVOD(url) {
 // Reproduz uma URL diretamente via proxy (MP4, TS como último recurso, etc.)
 function reproduzirDireto(url) {
     const urlProxy = proxyUrl(url);
-    console.log('[NexusTV] 📹 Direto via proxy:', url);
+    const urlHttps = url.startsWith('http://') ? url.replace('http://', 'https://').replace(/:80\//, '/').replace(/:80$/, '') : url;
+    
+    // Fila de tentativas para reprodução direta (o erro 502 no Railway será contornado pela tentativa Direta)
+    const tentativas = [
+        { src: urlProxy, label: 'Proxy Node (Railway)' },
+        { src: url, label: 'Direto (Navegador)' }
+    ];
+    
+    // Se era http, injetamos uma tentativa forçada de HTTPS no final (em caso de bloqueio Mixed Content e 403 do Provider)
+    if (url !== urlHttps) {
+        tentativas.push({ src: urlHttps, label: 'Direto Forçado HTTPS' });
+    }
 
-    elementos.player.src = urlProxy;
-    elementos.player.load();
+    let indice = 0;
 
-    elementos.player.addEventListener('loadedmetadata', () => {
-        esconderTodasTelas();
-        elementos.player.play().catch(() => {});
-    }, { once: true });
+    function tentarProximo() {
+        if (indice >= tentativas.length) {
+            console.error('[NexusTV] Erro: Todas as rotas de reprodução falharam para a midia.', url);
+            mostrarErro('Canal/Filme incompatível ou bloqueado pelo servidor. Tente outro canal.');
+            return;
+        }
 
-    elementos.player.addEventListener('error', (e) => {
-        console.error('[NexusTV] Erro player direto:', e);
-        mostrarErro('Canal não suportado ou indisponível. Tente outro canal.');
-    }, { once: true });
+        const atual = tentativas[indice];
+        console.log(`[NexusTV] 📹 Tentando reproduzir (${indice+1}/${tentativas.length}): ${atual.label}`);
+        
+        elementos.player.src = atual.src;
+        elementos.player.load();
+
+        const aoFalhar = (e) => {
+            console.warn(`[NexusTV] ⚠️ Falhou tentativa direta [${atual.label}]`);
+            limparListeners();
+            indice++;
+            tentarProximo();
+        };
+
+        const aoSucesso = () => {
+            console.log(`[NexusTV] ✅ Reprodução iniciada via [${atual.label}]`);
+            esconderTodasTelas();
+            limparListeners();
+            elementos.player.play().catch(() => {});
+        };
+
+        function limparListeners() {
+            elementos.player.removeEventListener('error', aoFalhar);
+            elementos.player.removeEventListener('loadedmetadata', aoSucesso);
+        }
+
+        elementos.player.addEventListener('error', aoFalhar, { once: true });
+        elementos.player.addEventListener('loadedmetadata', aoSucesso, { once: true });
+    }
+
+    tentarProximo();
 }
 
 // Reconfigura eventos do player após clonar o elemento
