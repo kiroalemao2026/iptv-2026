@@ -239,6 +239,51 @@ body {
     border-color: var(--verde);
 }
 
+/* ==================== Sub-Categorias de Filmes/Séries ==================== */
+.sub-categorias-wrapper {
+    margin-bottom: 10px;
+    border-radius: var(--raio-sm);
+    background: var(--bg-surface-2);
+    border: 1px solid var(--borda);
+    overflow: hidden;
+    animation: slideDown 0.2s ease;
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.sub-categorias-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 10px;
+    max-height: 130px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-surface-3) transparent;
+}
+.sub-categorias-lista::-webkit-scrollbar { width: 4px; }
+.sub-categorias-lista::-webkit-scrollbar-thumb { background: var(--bg-surface-3); border-radius: 4px; }
+.sub-cat-btn {
+    background: var(--bg-surface-3);
+    color: var(--texto-secundario);
+    border: 1px solid transparent;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.74rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transicao);
+    font-family: inherit;
+    white-space: nowrap;
+}
+.sub-cat-btn:hover { background: var(--bg-hover); color: var(--texto-primario); }
+.sub-cat-btn.ativo {
+    background: rgba(16,185,129,0.18);
+    color: var(--verde);
+    border-color: var(--verde);
+}
+
 /* ==================== Busca ==================== */
 .busca-container { position: relative; margin-bottom: 10px; }
 .campo-busca {

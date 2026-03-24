@@ -5,11 +5,14 @@
 const estado = {
     listas: [],
     canais: [],
+    canaisCategoria: [], // canais após filtro da categoria principal
     canaisFiltrados: [],
     canalAtual: null,
     listaAtual: null,
     favoritos: new Set(),
     hls: null,
+    categoriaAtiva: 'todos',
+    subCategoriaAtiva: null,
     config: {
         autoPlay: true,
         continuar: false,
@@ -80,7 +83,9 @@ const elementos = {
     
     // Outros
     btnTentarNovamente: document.getElementById('btn-tentar-novamente'),
-    toastContainer: document.getElementById('toast-container')
+    toastContainer: document.getElementById('toast-container'),
+    subCategoriasWrapper: document.getElementById('sub-categorias'),
+    subCategoriaLista: document.getElementById('sub-categorias-lista')
 };
 
 // ==================== Proxy Local ====================
@@ -211,6 +216,7 @@ async function carregarDados() {
                 ...c,
                 favorito: estado.favoritos.has(c.id)
             }));
+            estado.canaisCategoria = [...estado.canais]; // sincroniza base da categoria
             estado.canaisFiltrados = [...estado.canais];
             
             renderizarCanais();
@@ -1078,35 +1084,94 @@ function reconfigurarEventosPlayer() {
 
 function filtrarCanais() {
     const termo = elementos.buscaCanal.value.toLowerCase();
-    
-    estado.canaisFiltrados = estado.canais.filter(canal => 
+    // Busca dentro da categoria/subcategoria ativa (não do total de canais)
+    const base = estado.canaisCategoria.length > 0 ? estado.canaisCategoria : estado.canais;
+    estado.canaisFiltrados = base.filter(canal =>
         canal.nome.toLowerCase().includes(termo) ||
         canal.grupo.toLowerCase().includes(termo)
     );
-    
     renderizarCanais();
 }
 
+// Retorna a categoria principal de um canal baseado no grupo e URL
+function obterCategoriaCanal(canal) {
+    const grupo = canal.grupo.toLowerCase();
+    const url   = (canal.url || '').toLowerCase();
+    if (/\/movie\//i.test(url) || /filme|filmes|movie|movies|cinema|lанçament|lancament|comédia|comedia|ção|acao|drama|terror|horror|thriller|suspense|aventura|romance|docum|biogr/i.test(grupo)) return 'filmes';
+    if (/\/series?\//i.test(url) || /série|serie|temporada|season|episód|episod|novela/i.test(grupo)) return 'series';
+    if (/esporte|sport|futebol|basquete|tênes|tenis|vôlei|volei|nba|ufc|formula|f1|olimp|natac|swim/i.test(grupo)) return 'esportes';
+    if (/infant|kids|criança|crianc|cartoon|disney|animac|animaç/i.test(grupo)) return 'infantil';
+    return 'canais';
+}
+
 function filtrarPorCategoria(categoria) {
+    estado.categoriaAtiva = categoria;
+    estado.subCategoriaAtiva = null;
+
+    // Esconde sub-categorias por padrão
+    elementos.subCategoriasWrapper.classList.add('oculto');
+
     if (categoria === 'todos') {
-        estado.canaisFiltrados = [...estado.canais];
+        estado.canaisCategoria = [...estado.canais];
     } else {
-        const categoriasMap = {
-            'canais': ['Rede Globo', 'Rede SBT', 'Rede Record', 'Rede Bandeirantes', 'TV Cultura', 'Notícias'],
-            'filmes': ['Filmes', 'Telecine', 'HBO'],
-            'series': ['Séries', 'Netflix', 'Amazon'],
-            'esportes': ['Esportes', 'ESPN', 'SporTV', 'Premiere'],
-            'infantil': ['Infantil', 'Cartoon', 'Disney']
-        };
-        
-        const grupos = categoriasMap[categoria] || [];
-        
-        estado.canaisFiltrados = estado.canais.filter(canal =>
-            grupos.some(g => canal.grupo.toLowerCase().includes(g.toLowerCase()))
-        );
+        estado.canaisCategoria = estado.canais.filter(c => obterCategoriaCanal(c) === categoria);
     }
-    
+
+    estado.canaisFiltrados = [...estado.canaisCategoria];
     renderizarCanais();
+
+    // Mostrar sub-categorias para Filmes e Séries
+    if (categoria === 'filmes' || categoria === 'series') {
+        mostrarSubCategorias(estado.canaisCategoria);
+    }
+}
+
+function mostrarSubCategorias(canaisDaCategoria) {
+    // Contar ocorrências de cada grupo
+    const contagem = {};
+    canaisDaCategoria.forEach(c => {
+        contagem[c.grupo] = (contagem[c.grupo] || 0) + 1;
+    });
+
+    // Ordenar por quantidade (mais canais primeiro)
+    const grupos = Object.entries(contagem)
+        .sort((a, b) => b[1] - a[1])
+        .map(([g]) => g);
+
+    if (grupos.length === 0) return;
+
+    // Renderizar botões
+    elementos.subCategoriaLista.innerHTML = [
+        // Botão "Todos" da subcategoria
+        `<button class="sub-cat-btn ativo" data-grupo="__todos__" onclick="filtrarPorSubCategoria('__todos__', this)">
+            <i class="fas fa-th-large"></i> Todos (${canaisDaCategoria.length})
+        </button>`,
+        ...grupos.map(g =>
+            `<button class="sub-cat-btn" data-grupo="${g.replace(/"/g,'&quot;')}" onclick="filtrarPorSubCategoria('${g.replace(/'/g,"\\'")}', this)">
+                ${g} <span style="opacity:.55;font-size:.68rem">(${contagem[g]})</span>
+            </button>`
+        )
+    ].join('');
+
+    elementos.subCategoriasWrapper.classList.remove('oculto');
+}
+
+function filtrarPorSubCategoria(grupo, btn) {
+    estado.subCategoriaAtiva = grupo === '__todos__' ? null : grupo;
+
+    // Atualizar classe ativo nos botões
+    elementos.subCategoriaLista.querySelectorAll('.sub-cat-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+
+    if (grupo === '__todos__') {
+        estado.canaisFiltrados = [...estado.canaisCategoria];
+    } else {
+        estado.canaisFiltrados = estado.canaisCategoria.filter(c => c.grupo === grupo);
+    }
+
+    renderizarCanais();
+    // Limpar busca ao mudar subcategoria
+    elementos.buscaCanal.value = '';
 }
 
 // ==================== Controles do Player ====================
