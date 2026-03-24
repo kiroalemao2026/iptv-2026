@@ -4,6 +4,13 @@ const url = require('url');
 const path = require('path');
 const fs = require('fs');
 
+// Agente HTTPS que ignora erros de certificado SSL dos provedores de stream
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+    keepAlive: true
+});
+const httpAgent = new http.Agent({ keepAlive: true });
+
 
 const PORT = process.env.PORT || 3000;
 
@@ -51,24 +58,26 @@ const server = http.createServer((req, res) => {
                 return;
             }
 
-            const protocol = targetUrl.startsWith('https') ? https : http;
+            const isHttps = targetUrl.startsWith('https');
+            const protocol = isHttps ? https : http;
 
             const isLiveStream = targetUrl.endsWith('.ts') ||
-                /\/\d+(\\.ts)?$/.test(targetUrl.split('?')[0]);
+                /\/\d+(\.ts)?$/.test(targetUrl.split('?')[0]);
 
             const reqOptions = {
+                agent: isHttps ? httpsAgent : httpAgent,
                 headers: {
-                    // Headers completos de navegador Chrome real para evitar bloqueios
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept': '*/*',
                     'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Accept-Encoding': 'identity', // sem gzip para evitar descompressão dupla
                     'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1',
                     'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
+                    'Pragma': 'no-cache',
+                    // Repassa Range se o cliente enviou (VOD / seek)
+                    ...(req.headers['range'] ? { 'Range': req.headers['range'] } : {})
                 },
-                timeout: isLiveStream ? 60000 : 30000
+                timeout: isLiveStream ? 90000 : 30000
             };
 
             const proxyReq = protocol.get(targetUrl, reqOptions, (proxyRes) => {
@@ -110,6 +119,8 @@ const server = http.createServer((req, res) => {
                 delete headers['x-frame-options'];
                 delete headers['content-length']; // Evita truncamento em conteúdo dinâmico
                 delete headers['transfer-encoding'];
+                delete headers['strict-transport-security'];
+                delete headers['x-content-type-options'];
 
                 // Para manifesto HLS: ler body e reescrever URLs dos segmentos
                 const isManifest = contentType.includes('mpegurl') ||
@@ -303,10 +314,15 @@ const server = http.createServer((req, res) => {
     });
 });
 
+// Aumentar timeout do servidor para evitar 502 no Railway durante streams longos
+server.timeout = 0;           // sem timeout de socket (Railway controla)
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
+
 server.listen(PORT, () => {
     console.log('');
     console.log('========================================');
-    console.log('  Nexus TV - Servidor Local');
+    console.log('  Nexus TV - Servidor Railway/Local');
     console.log('========================================');
     console.log('');
     console.log(`  Abra no navegador: http://localhost:${PORT}`);
