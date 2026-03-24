@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ==================== Cache Avançado (IndexedDB) ==================== */
 function openDB() {
     return new Promise((resolve, reject) => {
-        // Versão 2: invalida cache antigo (corrige bug de IDs duplicados)
-        const req = indexedDB.open('IPTVCacheDB', 2);
+        // Versão 3: invalida cache com URLs duplo-proxy (bug corrigido)
+        const req = indexedDB.open('IPTVCacheDB', 3);
         req.onupgradeneeded = (e) => {
             const db = e.target.result;
             // Apagar objectStore antigo se existir para limpar cache corrompido
@@ -742,6 +742,14 @@ function reproduzirCanal(canal) {
     reconfigurarEventosPlayer();
 
     let urlOriginal = canal.url.trim();
+
+    // ── Sanitização: remove wrapper /proxy?url= do cache antigo ────────────────
+    // O cache pode ter URLs já proxificadas. Decodifica para obter a URL real,
+    // senão a detecção de isXtreamLive/isHLS/isVOD falha e os canais ao vivo
+    // não entram na cascata correta.
+    while (urlOriginal.startsWith('/proxy?url=')) {
+        try { urlOriginal = decodeURIComponent(urlOriginal.slice('/proxy?url='.length)); } catch(e) { break; }
+    }
 
     // ── Normalização de URL ──────────────────────────────────────────────────
     // output=ts → output=m3u8
