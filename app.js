@@ -415,13 +415,23 @@ async function carregarListaM3U(url) {
     // 1ª tentativa: Acesso direto pelo navegador (evita bloqueio de datacenter como Railway)
     try {
         console.log('Buscando lista diretamente (browser -> provedor IPTV)...');
-        const texto = await fetchComTimeout(url, 15000); // 15s timeout para não atrasar fallbacks
+        const texto = await fetchComTimeout(url, 15000); // 15s timeout
         return parsearM3U(texto);
     } catch (erroDireto) {
-        console.warn('Falha na busca direta (pode ser CORS):', erroDireto.message, '— tentando /buscar-lista...');
+        console.warn('Falha na busca direta (pode ser CORS):', erroDireto.message, '— tentando via corsproxy.io...');
+    }
+    
+    // 2ª tentativa: CORS Proxy Público (Resolve bloqueios no IP do Railway usando IP de terceiros)
+    try {
+        console.log('Buscando lista via proxy público corsproxy.io...');
+        const corsUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        const texto = await fetchComTimeout(corsUrl, 20000);
+        return parsearM3U(texto);
+    } catch (erroCors) {
+         console.warn('Falha no corsproxy.io:', erroCors.message, '— tentando /buscar-lista do servidor local...');
     }
 
-    // 2ª tentativa: rota dedicada /buscar-lista com headers anti-403 no servidor
+    // 3ª tentativa: rota dedicada /buscar-lista com headers anti-403 no servidor local (Railway)
     try {
         console.log('Buscando lista via /buscar-lista (servidor proxy com headers)...');
         const texto = await fetchComTimeout('/buscar-lista?url=' + encodeURIComponent(url), 60000);
@@ -430,14 +440,14 @@ async function carregarListaM3U(url) {
         console.warn('Falha /buscar-lista:', erro1.message, '— tentando /proxy genérico...');
     }
 
-    // 3ª tentativa: proxy genérico (último fallback)
+    // 4ª tentativa: proxy genérico (último fallback)
     try {
         console.log('Buscando lista via /proxy (fallback)...');
         const texto = await fetchComTimeout(PROXY_LOCAL + encodeURIComponent(url), 60000);
         return parsearM3U(texto);
     } catch (erro2) {
         console.error('Erro (todas tentativas falharam):', erro2.message);
-        throw new Error('Não foi possível carregar a lista. O servidor remoto pode estar bloqueando o acesso (403). Verifique a URL ou tente novamente.');
+        throw new Error('Não foi possível carregar a lista. O servidor remoto bloqueou o acesso em todas as rotas (403/500). Verifique a URL ou sua restrição de IP.');
     }
 }
 
