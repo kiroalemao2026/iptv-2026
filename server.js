@@ -519,10 +519,6 @@ const server = http.createServer((req, res) => {
                     'Connection': 'keep-alive',
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
-                    'DNT': '1',
-                    'Sec-Fetch-Dest': isLiveStream ? 'video' : 'empty',
-                    'Sec-Fetch-Mode': 'cors',
-                    'Sec-Fetch-Site': 'cross-site',
                     ...(targetOrigin ? { 'Referer': targetOrigin + '/', 'Origin': targetOrigin } : {}),
                     ...(req.headers['range'] ? { 'Range': req.headers['range'] } : {})
                 },
