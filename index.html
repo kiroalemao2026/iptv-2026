@@ -93,21 +93,24 @@
 
         .senha-card .logo-icon {
             position: relative;
-            width: 88px;
-            height: 88px;
-            background: linear-gradient(145deg, #7c73ff, #00d4ff);
+            width: 100px;
+            height: 100px;
             border-radius: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
-            color: #fff;
+            overflow: hidden;
             box-shadow:
                 0 12px 40px rgba(108,99,255,0.5),
                 0 0 0 8px rgba(108,99,255,0.1);
         }
 
-        .senha-card .logo-icon i { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+        .senha-card .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 22px;
+        }
 
         /* Badge premium */
         .badge-premium {
@@ -271,7 +274,7 @@
             <!-- Logo -->
             <div class="logo-wrapper">
                 <div class="logo-glow"></div>
-                <div class="logo-icon"><i class="fas fa-satellite-dish"></i></div>
+                <div class="logo-icon"><img src="logo_nexus.png" alt="Nexus TV"></div>
             </div>
 
             <div class="badge-premium">✦ Acesso Exclusivo</div>
@@ -547,7 +550,7 @@
     <div class="container">
         <!-- Cabeçalho -->
         <header class="cabecalho">
-            <h1><i class="fas fa-tv"></i> Nexus TV</h1>
+            <h1><img src="logo_nexus.png" alt="Nexus TV" style="width:32px;height:32px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px;"> Nexus TV</h1>
             <div class="controles-cabecalho">
                 <button id="btn-adicionar-lista" class="botao-primario" style="display: none;">
                     <i class="fas fa-plus"></i> Adicionar Lista
