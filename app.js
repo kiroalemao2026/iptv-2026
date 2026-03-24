@@ -777,9 +777,10 @@ function reproduzirCanal(canal) {
     );
 
     // ── VOD (filmes / séries) ────────────────────────────────────────────────
-    // → reproduz direto via proxy sem cascata HLS
+    // Tenta: 1) HLS.js com proxy (muitos VOD Xtream são HLS disfarçado)
+    //        2) Player nativo via proxy (MP4 direto)
     if (isMp4 || isVOD) {
-        reproduzirDireto(urlOriginal);
+        reproduzirVOD(urlOriginal);
         return;
     }
 
@@ -1044,6 +1045,54 @@ function proxyUrl(url) {
     return PROXY_LOCAL + encodeURIComponent(url);
 }
 
+// Reproduz VOD (filmes/series) com cascata: HLS.js → player nativo
+function reproduzirVOD(url) {
+    const urlProxy = proxyUrl(url);
+    console.log('[NexusTV] 🎬 VOD via proxy:', url);
+
+    // Tentativa 1: HLS.js (muitos VOD Xtream são HLS disfarçado)
+    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+        if (estado.hls) { estado.hls.destroy(); estado.hls = null; }
+        estado.hls = new Hls({
+            maxBufferLength: 30,
+            maxMaxBufferLength: 120,
+            enableWorker: true,
+            manifestLoadingMaxRetry: 1,
+            xhrSetup: function(xhr, xhrUrl) {
+                if (xhrUrl.startsWith('/') || xhrUrl.includes('localhost') || xhrUrl.includes('127.0.0.1')) return;
+                xhr.open('GET', PROXY_LOCAL + encodeURIComponent(xhrUrl), true);
+            }
+        });
+        estado.hls.loadSource(urlProxy);
+        estado.hls.attachMedia(elementos.player);
+
+        estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            console.log('[NexusTV] ✅ VOD HLS ok');
+            esconderTodasTelas();
+            elementos.player.muted = false;
+            elementos.player.play().catch(e => {
+                elementos.player.muted = true;
+                elementos.player.play().catch(() => {});
+            });
+            atualizarIconeVolume();
+        });
+
+        estado.hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) {
+                console.warn('[NexusTV] ❌ VOD HLS falhou, tentando player nativo:', data.details);
+                estado.hls.destroy();
+                estado.hls = null;
+                // Fallback: player nativo
+                reproduzirDireto(url);
+            }
+        });
+        return;
+    }
+
+    // Sem HLS.js: vai direto para player nativo
+    reproduzirDireto(url);
+}
+
 // Reproduz uma URL diretamente via proxy (MP4, TS como último recurso, etc.)
 function reproduzirDireto(url) {
     const urlProxy = proxyUrl(url);
@@ -1059,7 +1108,7 @@ function reproduzirDireto(url) {
 
     elementos.player.addEventListener('error', (e) => {
         console.error('[NexusTV] Erro player direto:', e);
-        mostrarErro('Canal não suportado pelo navegador. Tente outro canal.');
+        mostrarErro('Canal não suportado ou indisponível. Tente outro canal.');
     }, { once: true });
 }
 

@@ -55,6 +55,13 @@ const server = http.createServer((req, res) => {
             try { targetUrl = decodeURIComponent(targetUrl.slice('/proxy?url='.length)); } catch(e) { break; }
         }
 
+        // Se estamos em HTTPS (Railway), forçar HTTPS na URL alvo para evitar Mixed Content
+        // Muitos servidores IPTV aceitam HTTPS na mesma porta ou na 443
+        const isHttpsServer = req.headers['x-forwarded-proto'] === 'https';
+        if (isHttpsServer && targetUrl.startsWith('http://')) {
+            targetUrl = targetUrl.replace('http://', 'https://');
+        }
+
         console.log(`[Proxy] -> ${targetUrl}`);
 
         function fazerRequisicao(targetUrl, tentativas) {
@@ -70,15 +77,24 @@ const server = http.createServer((req, res) => {
             const isLiveStream = targetUrl.endsWith('.ts') ||
                 /\/\d+(\.ts)?$/.test(targetUrl.split('?')[0]);
 
+            // Extrair origem da URL alvo para usar como Referer/Origin
+            let targetOrigin = '';
+            try {
+                const parsedTarget = new URL(targetUrl);
+                targetOrigin = parsedTarget.origin;
+            } catch(e) {}
+
             const reqOptions = {
                 agent: isHttps ? httpsAgent : httpAgent,
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
                     'Accept': '*/*',
-                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8',
+                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
                     'Accept-Encoding': 'identity',
                     'Connection': 'keep-alive',
                     'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    ...(targetOrigin ? { 'Referer': targetOrigin + '/', 'Origin': targetOrigin } : {}),
                     ...(req.headers['range'] ? { 'Range': req.headers['range'] } : {})
                 },
                 // CRÍTICO: 8s para Railway não fazer 502 (Railway timeout ~10-15s)
