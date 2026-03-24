@@ -333,6 +333,7 @@ const server = http.createServer((req, res) => {
     // GET /buscar-lista?url=...
     // ============================================================
     if (req.url.startsWith('/buscar-lista?')) {
+        try {
         const parsedUrl = url.parse(req.url, true);
         let targetUrl = parsedUrl.query.url;
 
@@ -456,6 +457,13 @@ const server = http.createServer((req, res) => {
         }
 
         tentarBuscarLista(targetUrl, 0);
+        } catch(errGlobal) {
+            console.error('[BuscarLista] Erro inesperado:', errGlobal.message);
+            if (!res.headersSent) {
+                res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                res.end(JSON.stringify({ error: 'Erro interno no servidor: ' + errGlobal.message }));
+            }
+        }
         return;
     }
 
@@ -675,6 +683,16 @@ const server = http.createServer((req, res) => {
 server.timeout = 0;
 server.keepAliveTimeout = 65000;
 server.headersTimeout  = 66000;
+
+// ============================================================
+// Proteção global: impede que o servidor caia por erros inesperados
+// ============================================================
+process.on('uncaughtException', (err) => {
+    console.error('[GLOBAL] Erro não capturado (servidor continua):', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('[GLOBAL] Promise rejeitada (servidor continua):', reason);
+});
 
 server.listen(PORT, () => {
     console.log('');
