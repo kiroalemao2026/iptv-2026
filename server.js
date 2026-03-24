@@ -69,15 +69,15 @@ const server = http.createServer((req, res) => {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
                     'Accept': '*/*',
-                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-                    'Accept-Encoding': 'identity', // sem gzip para evitar descompressão dupla
+                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8',
+                    'Accept-Encoding': 'identity',
                     'Connection': 'keep-alive',
                     'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache',
-                    // Repassa Range se o cliente enviou (VOD / seek)
                     ...(req.headers['range'] ? { 'Range': req.headers['range'] } : {})
                 },
-                timeout: isLiveStream ? 90000 : 30000
+                // CRÍTICO: 8s para Railway não fazer 502 (Railway timeout ~10-15s)
+                // Streams ao vivo recebem mais tempo pois a conexão já está estabelecida
+                timeout: isLiveStream ? 15000 : 8000
             };
 
             const proxyReq = protocol.get(targetUrl, reqOptions, (proxyRes) => {
