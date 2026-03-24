@@ -3,3 +3,14 @@ node_modules/
 .env
 nul
 *.bat
+
+# Banco de dados SQLite (dados sensíveis)
+nexus.db
+*.db
+
+# Backups de migração JSON → SQLite
+*.bak
+
+# config e senhas locais (agora no SQLite)
+config.json
+senhas.json

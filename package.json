@@ -9,7 +9,14 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["iptv", "m3u", "player"],
+  "keywords": [
+    "iptv",
+    "m3u",
+    "player"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.8.0"
+  }
 }

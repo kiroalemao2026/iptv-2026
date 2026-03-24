@@ -4,70 +4,777 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - Nexus TV</title>
-    <link rel="stylesheet" href="estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { display: flex; align-items: center; justify-content: center; height: 100vh; background-color: var(--fundo-corpo); }
-        .admin-box { background: var(--fundo-principal); padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid var(--fundo-secundario); max-width: 400px; width: 100%; }
-        .admin-box h2 { margin-top: 0; color: var(--texto-primario); text-align: center; margin-bottom: 20px; }
-        .admin-box .campo-formulario { margin-bottom: 15px; }
-        .admin-box label { display: block; color: var(--texto-secundario); margin-bottom: 5px; }
-        .admin-box input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--fundo-secundario); background: var(--fundo-secundario); color: var(--texto-primario); }
-        .admin-box button { width: 100%; padding: 12px; margin-top: 10px; font-weight: bold; }
-        .msg { margin-top: 15px; text-align: center; font-size: 14px; }
-        .erro { color: var(--cor-perigo); }
-        .sucesso { color: var(--cor-sucesso); }
+        :root {
+            --bg: #0d0f1a;
+            --surface: #161927;
+            --surface2: #1e2236;
+            --border: #2a2f4a;
+            --accent: #6c63ff;
+            --accent2: #00d4ff;
+            --success: #00c97a;
+            --danger: #ff4d4d;
+            --warn: #ffa500;
+            --text: #e8eaf6;
+            --text2: #9ba3c7;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ---- LOGIN ---- */
+        #tela-login {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 50% 0%, #1a1060 0%, #0d0f1a 60%);
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .login-logo i { font-size: 40px; color: var(--accent); }
+        .login-logo h1 { font-size: 22px; margin-top: 10px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .login-logo p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+        /* ---- PAINEL PRINCIPAL ---- */
+        #tela-painel { display: none; }
+
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-logo { display: flex; align-items: center; gap: 10px; }
+        .header-logo i { color: var(--accent); font-size: 22px; }
+        .header-logo span { font-size: 18px; font-weight: 700; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--surface2);
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .tab-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text2);
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.ativo {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .content { padding: 28px; max-width: 860px; margin: 0 auto; }
+
+        .tab-content { display: none; }
+        .tab-content.ativo { display: block; }
+
+        /* ---- CARDS ---- */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card-titulo {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text);
+        }
+
+        .card-titulo i { color: var(--accent); }
+
+        /* ---- INPUTS ---- */
+        .campo { margin-bottom: 14px; }
+        label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+
+        input[type="text"], input[type="password"], input[type="url"], input[type="number"] {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        .row { display: flex; gap: 12px; }
+        .row .campo { flex: 1; }
+
+        /* ---- BOTÕES ---- */
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #483cdb); color: #fff; }
+        .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        .btn-danger { background: var(--danger); color: #fff; font-size: 12px; padding: 6px 12px; }
+        .btn-danger:hover { filter: brightness(1.1); }
+
+        .btn-secondary {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text2);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
+
+        /* ---- RESULTADO DA SENHA GERADA ---- */
+        #resultado-senha {
+            display: none;
+            margin-top: 20px;
+            background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(0,212,255,0.08));
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #resultado-senha .senha-gerada {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: 10px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        #resultado-senha .senha-info { font-size: 13px; color: var(--text2); }
+
+        .copiar-row { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+
+        /* ---- TABELA DE SENHAS ---- */
+        .tabela-wrap { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead tr { background: var(--surface2); }
+
+        th {
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text2);
+        }
+
+        td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-ok { background: rgba(0,201,122,0.15); color: var(--success); }
+        .badge-exp { background: rgba(255,77,77,0.15); color: var(--danger); }
+
+        .codigo-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--accent2);
+        }
+
+        /* ---- URL ADMIN ---- */
+        .msg { font-size: 13px; margin-top: 12px; padding: 10px 14px; border-radius: 8px; }
+        .msg-ok { background: rgba(0,201,122,0.1); color: var(--success); }
+        .msg-err { background: rgba(255,77,77,0.1); color: var(--danger); }
+
+        /* ---- MISC ---- */
+        .empty { text-align: center; padding: 32px; color: var(--text2); }
+        .empty i { font-size: 32px; margin-bottom: 10px; opacity: 0.4; }
+
+        .btn-logout {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            padding: 7px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+        /* ---- TOAST ---- */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 20px;
+            font-size: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.ok { border-left: 4px solid var(--success); }
+        .toast.err { border-left: 4px solid var(--danger); }
+
+        @keyframes slideIn {
+            from { transform: translateX(40px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ---- MODAL CONFIRMAÇÃO ---- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.15s ease;
+        }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        .modal-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 380px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            animation: popIn 0.2s ease;
+        }
+        @keyframes popIn { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
+        .modal-box .modal-icon {
+            width: 56px; height: 56px;
+            background: rgba(255,77,77,0.15);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 24px; color: var(--danger);
+        }
+        .modal-box h3 { font-size: 18px; margin-bottom: 8px; }
+        .modal-box p { font-size: 13px; color: var(--text2); margin-bottom: 24px; line-height: 1.5; }
+        .modal-btns { display: flex; gap: 10px; justify-content: center; }
+        .modal-btn-cancel {
+            padding: 10px 24px; border-radius: 8px;
+            background: var(--surface2); border: 1px solid var(--border);
+            color: var(--text2); cursor: pointer; font-size: 14px; font-weight: 600;
+            transition: all 0.2s;
+        }
+        .modal-btn-cancel:hover { border-color: var(--accent); color: var(--text); }
+        .modal-btn-confirm {
+            padding: 10px 24px; border-radius: 8px;
+            background: var(--danger); border: none;
+            color: #fff; cursor: pointer; font-size: 14px; font-weight: 700;
+            transition: all 0.2s;
+        }
+        .modal-btn-confirm:hover { filter: brightness(1.1); }
     </style>
 </head>
 <body>
-    <div class="admin-box">
-        <h2><i class="fas fa-lock"></i> Painel Admin</h2>
-        <div class="campo-formulario">
-            <label>Nova URL da Lista M3U:</label>
-            <input type="url" id="admin-url" placeholder="Ex: https://lista.m3u">
+
+<!-- ===== TELA DE LOGIN ===== -->
+<div id="tela-login">
+    <div class="login-card">
+        <div class="login-logo">
+            <i class="fas fa-tv"></i>
+            <h1>Nexus TV</h1>
+            <p>Painel de Administração</p>
         </div>
-        <div class="campo-formulario">
-            <label>Senha de Administrador:</label>
-            <input type="password" id="admin-senha" placeholder="Digite a senha (1234)">
+
+        <div class="campo">
+            <label>Senha de Administrador</label>
+            <input type="password" id="inp-senha-login" placeholder="Digite a senha..." autocomplete="off">
         </div>
-        <button id="btn-atualizar" class="botao-primario">Atualizar Lista Oficial</button>
-        <p id="msg-retorno" class="msg"></p>
+
+        <button class="btn btn-primary" style="width:100%; margin-top:8px; justify-content:center;" onclick="fazerLogin()">
+            <i class="fas fa-sign-in-alt"></i> Entrar no Painel
+        </button>
+
+        <p id="msg-login" style="margin-top:14px; font-size:13px; color: var(--danger); text-align:center; min-height:20px;"></p>
+    </div>
+</div>
+
+<!-- ===== PAINEL PRINCIPAL ===== -->
+<div id="tela-painel">
+    <div class="header">
+        <div class="header-logo">
+            <i class="fas fa-tv"></i>
+            <span>Nexus TV Admin</span>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn ativo" onclick="trocarTab('senhas', this)">
+                <i class="fas fa-key"></i> Senhas
+            </button>
+            <button class="tab-btn" onclick="trocarTab('config', this)">
+                <i class="fas fa-link"></i> Lista M3U
+            </button>
+        </div>
+
+        <button class="btn-logout" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Sair
+        </button>
     </div>
 
-    <script>
-        // Carrega a URL atual configurada para facilitar a alteração
-        fetch('/api/public-config').then(res => res.json()).then(data => {
-            if(data.url) document.getElementById('admin-url').value = data.url;
-        });
+    <div class="content">
 
-        document.getElementById('btn-atualizar').addEventListener('click', async () => {
-            const url = document.getElementById('admin-url').value;
-            const senha = document.getElementById('admin-senha').value;
-            const msg = document.getElementById('msg-retorno');
+        <!-- ===== TAB: SENHAS ===== -->
+        <div id="tab-senhas" class="tab-content ativo">
 
-            msg.className = 'msg';
-            msg.textContent = 'Salvando...';
+            <!-- Gerar nova senha -->
+            <div class="card">
+                <div class="card-titulo">
+                    <i class="fas fa-plus-circle"></i> Gerar Nova Senha de Acesso
+                </div>
 
-            try {
-                const res = await fetch('/api/admin-config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, senha })
-                });
+                <div class="row">
+                    <div class="campo">
+                        <label>Nome do Cliente</label>
+                        <input type="text" id="inp-nome-cliente" placeholder="Ex: João Silva">
+                    </div>
+                    <div class="campo" style="max-width: 160px;">
+                        <label>Validade (dias)</label>
+                        <input type="number" id="inp-dias" value="30" min="1" max="365">
+                    </div>
+                </div>
 
-                const data = await res.json();
-                if(data.success) {
-                    msg.className = 'msg sucesso';
-                    msg.innerHTML = 'Lista atualizada com sucesso!<br><a href="/" style="color:var(--cor-destaque);">Acessar Nexus TV</a>';
-                } else {
-                    msg.className = 'msg erro';
-                    msg.textContent = data.error || 'Erro desconhecido.';
-                }
-            } catch(e) {
-                msg.className = 'msg erro';
-                msg.textContent = 'Erro ao contatar servidor.';
+                <button class="btn btn-success" onclick="gerarSenha()">
+                    <i class="fas fa-dice"></i> Gerar Senha
+                </button>
+
+                <!-- Resultado -->
+                <div id="resultado-senha">
+                    <p style="font-size:13px; color: var(--text2);">Senha gerada para <strong id="res-nome"></strong></p>
+                    <div class="senha-gerada" id="res-codigo"></div>
+                    <p class="senha-info" id="res-info"></p>
+                    <div class="copiar-row">
+                        <button class="btn btn-primary" onclick="copiarSenha()">
+                            <i class="fas fa-copy"></i> Copiar Senha
+                        </button>
+                        <button class="btn btn-secondary" onclick="compartilharWhatsApp()">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de senhas ativas -->
+            <div class="card">
+                <div class="card-titulo" style="justify-content: space-between;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <i class="fas fa-list-ul"></i> Senhas Cadastradas
+                    </div>
+                    <button class="btn btn-secondary" onclick="carregarSenhas()" style="font-size:13px; padding: 7px 14px;">
+                        <i class="fas fa-sync"></i> Atualizar
+                    </button>
+                </div>
+
+                <div class="tabela-wrap">
+                    <div id="tabela-senhas">
+                        <div class="empty"><i class="fas fa-key d-block"></i><p>Carregando...</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TAB: CONFIGURAÇÃO M3U ===== -->
+        <div id="tab-config" class="tab-content">
+            <div class="card">
+                <div class="card-titulo">
+                    <i class="fas fa-link"></i> URL da Lista M3U
+                </div>
+
+                <div class="campo">
+                    <label>URL da Lista IPTV (M3U / M3U8)</label>
+                    <input type="url" id="inp-url-m3u" placeholder="https://provedor.com/lista.m3u?user=...">
+                </div>
+
+                <div class="campo" style="margin-top:16px;">
+                    <label><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp do Suporte</label>
+                    <input type="tel" id="inp-whatsapp" placeholder="Ex: 5511999990000 (com DDI e DDD, sem espaços)">
+                    <small style="color:var(--text2);margin-top:4px;display:block;">Mostrado na tela de bloqueio do cliente para ele entrar em contato.</small>
+                </div>
+
+                <button class="btn btn-primary" onclick="salvarConfig()">
+                    <i class="fas fa-save"></i> Salvar Configurações
+                </button>
+
+                <div id="msg-config"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let SENHA_ADMIN = '';
+
+    // ============================================================
+    // LOGIN
+    // ============================================================
+    document.getElementById('inp-senha-login').addEventListener('keydown', e => {
+        if (e.key === 'Enter') fazerLogin();
+    });
+
+    async function fazerLogin(senhaParam) {
+        const senha = senhaParam || document.getElementById('inp-senha-login').value.trim();
+        if (!senha) return;
+
+        // Testa a senha tentando listar as senhas
+        try {
+            const res = await fetch('/api/listar-senhas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senha_admin: senha })
+            });
+            const data = await res.json();
+            if (data.error) {
+                document.getElementById('msg-login').textContent = data.error;
+                // Limpa localStorage se a senha salva for inválida
+                localStorage.removeItem('nexus_admin_senha');
+                return;
             }
+            SENHA_ADMIN = senha;
+            localStorage.setItem('nexus_admin_senha', senha); // Persiste o login
+            document.getElementById('tela-login').style.display = 'none';
+            document.getElementById('tela-painel').style.display = 'block';
+            renderizarSenhas(data.senhas);
+            carregarUrlConfig();
+        } catch(e) {
+            document.getElementById('msg-login').textContent = 'Erro ao conectar ao servidor.';
+        }
+    }
+
+    function logout() {
+        SENHA_ADMIN = '';
+        localStorage.removeItem('nexus_admin_senha'); // Apaga o login salvo
+        document.getElementById('tela-painel').style.display = 'none';
+        document.getElementById('tela-login').style.display = 'flex';
+        document.getElementById('inp-senha-login').value = '';
+        document.getElementById('resultado-senha').style.display = 'none';
+    }
+
+    // Auto-login ao carregar a página
+    (async () => {
+        const senhaSalva = localStorage.getItem('nexus_admin_senha');
+        if (senhaSalva) await fazerLogin(senhaSalva);
+    })();
+
+    // ============================================================
+    // TABS
+    // ============================================================
+    function trocarTab(nome, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('ativo'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('ativo'));
+        document.getElementById('tab-' + nome).classList.add('ativo');
+        if (btn) btn.classList.add('ativo');
+    }
+
+    // ============================================================
+    // GERAR SENHA
+    // ============================================================
+    let ultimaSenha = '';
+    let ultimoNome = '';
+
+    async function gerarSenha() {
+        const nome = document.getElementById('inp-nome-cliente').value.trim() || 'Cliente';
+        const dias = document.getElementById('inp-dias').value || 30;
+
+        try {
+            const res = await fetch('/api/gerar-senha', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senha_admin: SENHA_ADMIN, nome_cliente: nome, dias })
+            });
+            const data = await res.json();
+            if (!data.success) { toast(data.error || 'Erro ao gerar senha', 'err'); return; }
+
+            ultimaSenha = data.senha;
+            ultimoNome = nome;
+
+            document.getElementById('res-nome').textContent = nome;
+            document.getElementById('res-codigo').textContent = data.senha;
+            document.getElementById('res-info').textContent = `Válida por ${dias} dias`;
+
+            const box = document.getElementById('resultado-senha');
+            box.style.display = 'block';
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            toast('Senha gerada com sucesso!', 'ok');
+            carregarSenhas();
+        } catch(e) {
+            toast('Erro ao gerar senha.', 'err');
+        }
+    }
+
+    function copiarSenha() {
+        if (!ultimaSenha) return;
+        navigator.clipboard.writeText(ultimaSenha).then(() => {
+            toast('Senha copiada: ' + ultimaSenha, 'ok');
         });
-    </script>
+    }
+
+    function compartilharWhatsApp() {
+        if (!ultimaSenha) return;
+        const msg = `🔑 *Sua senha de acesso Nexus TV*\n\n` +
+            `👤 Cliente: ${ultimoNome}\n` +
+            `🔢 Senha: *${ultimaSenha}*\n\n` +
+            `Abra o app e insira essa senha para começar a assistir! 🎬`;
+        const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    }
+
+    // ============================================================
+    // LISTAR / REVOGAR SENHAS
+    // ============================================================
+    async function carregarSenhas() {
+        try {
+            const res = await fetch('/api/listar-senhas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senha_admin: SENHA_ADMIN })
+            });
+            const data = await res.json();
+            if (data.error) { toast(data.error, 'err'); return; }
+            renderizarSenhas(data.senhas);
+        } catch(e) {
+            toast('Erro ao carregar senhas.', 'err');
+        }
+    }
+
+    function renderizarSenhas(lista) {
+        const container = document.getElementById('tabela-senhas');
+
+        if (!lista || lista.length === 0) {
+            container.innerHTML = `<div class="empty"><i class="fas fa-key"></i><p>Nenhuma senha cadastrada ainda.<br>Gere a primeira senha para um cliente!</p></div>`;
+            return;
+        }
+
+        // Ordenar: válidas primeiro, depois expiradas
+        lista.sort((a, b) => (a.expirada ? 1 : -1) || b.criada - a.criada);
+
+        const agora = Date.now();
+        const linhas = lista.map(s => {
+            const expira = new Date(s.expira).toLocaleDateString('pt-BR');
+            const criada = new Date(s.criada).toLocaleDateString('pt-BR');
+            const diasRestantes = Math.max(0, Math.ceil((s.expira - agora) / 86400000));
+            const badge = s.expirada
+                ? '<span class="badge badge-exp">Expirada</span>'
+                : `<span class="badge badge-ok">✓ ${diasRestantes}d restantes</span>`;
+
+            const nomeEsc = s.nome.replace(/"/g, '&quot;');
+            return `<tr>
+                <td class="codigo-cell">${s.codigo}</td>
+                <td>${s.nome}</td>
+                <td>${criada}</td>
+                <td>${expira}</td>
+                <td>${badge}</td>
+                <td>
+                    <button class="btn btn-danger btn-revogar"
+                        data-codigo="${s.codigo}"
+                        data-nome="${nomeEsc}">
+                        <i class="fas fa-trash"></i> Revogar
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        container.innerHTML = `<table>
+            <thead>
+                <tr>
+                    <th>Senha</th>
+                    <th>Cliente</th>
+                    <th>Criada em</th>
+                    <th>Expira em</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+        </table>`;
+
+        // Adicionar listener nos botões Revogar via event delegation
+        container.querySelectorAll('.btn-revogar').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const codigo = btn.dataset.codigo;
+                const nome = btn.dataset.nome;
+                confirmarRevogacao(codigo, nome);
+            });
+        });
+    }
+
+    // Modal customizado de confirmação (substitui o confirm() nativo)
+    function confirmarRevogacao(codigo, nome) {
+        // Remove qualquer modal anterior
+        const anterior = document.getElementById('modal-confirmacao');
+        if (anterior) anterior.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'modal-confirmacao';
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal-box">
+                <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3>Revogar Acesso</h3>
+                <p>Deseja revogar a senha <strong>${codigo}</strong> de <strong>${nome}</strong>?<br>O cliente perderá o acesso imediatamente.</p>
+                <div class="modal-btns">
+                    <button class="modal-btn-cancel" id="modal-cancelar">Cancelar</button>
+                    <button class="modal-btn-confirm" id="modal-confirmar"><i class="fas fa-trash"></i> Revogar</button>
+                </div>
+            </div>`;
+
+        document.body.appendChild(overlay);
+
+        document.getElementById('modal-cancelar').onclick = () => overlay.remove();
+        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+        document.getElementById('modal-confirmar').onclick = async () => {
+            overlay.remove();
+            await executarRevogacao(codigo);
+        };
+    }
+
+    async function executarRevogacao(codigo) {
+        try {
+            const res = await fetch('/api/revogar-senha', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senha_admin: SENHA_ADMIN, codigo })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast('Senha revogada com sucesso.', 'ok');
+                carregarSenhas();
+            } else {
+                toast(data.error || 'Erro ao revogar.', 'err');
+            }
+        } catch(e) {
+            toast('Erro ao revogar senha.', 'err');
+        }
+    }
+
+    // ============================================================
+    // CONFIG URL M3U (aba antiga)
+    // ============================================================
+    async function carregarUrlConfig() {
+        try {
+            const res = await fetch('/api/public-config');
+            const data = await res.json();
+            if (data.url) document.getElementById('inp-url-m3u').value = data.url;
+            if (data.whatsapp) document.getElementById('inp-whatsapp').value = data.whatsapp;
+        } catch(e) {}
+    }
+
+    async function salvarConfig() {
+        const url = document.getElementById('inp-url-m3u').value.trim();
+        const whatsapp = document.getElementById('inp-whatsapp').value.trim().replace(/\D/g, '');
+        const msgEl = document.getElementById('msg-config');
+        msgEl.textContent = '';
+
+        try {
+            const res = await fetch('/api/admin-config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, whatsapp, senha: SENHA_ADMIN })
+            });
+            const data = await res.json();
+            if (data.success) {
+                msgEl.className = 'msg msg-ok';
+                msgEl.textContent = '✓ Configurações salvas!';
+                toast('Configurações atualizadas!', 'ok');
+            } else {
+                msgEl.className = 'msg msg-err';
+                msgEl.textContent = data.error || 'Erro ao salvar.';
+            }
+        } catch(e) {
+            msgEl.className = 'msg msg-err';
+            msgEl.textContent = 'Erro ao conectar ao servidor.';
+        }
+    }
+
+    // ============================================================
+    // TOAST
+    // ============================================================
+    function toast(msg, tipo) {
+        const el = document.createElement('div');
+        el.className = `toast ${tipo === 'ok' ? 'ok' : 'err'}`;
+        el.innerHTML = `<i class="fas fa-${tipo === 'ok' ? 'check-circle' : 'exclamation-circle'}"></i> ${msg}`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3500);
+    }
+</script>
 </body>
 </html>

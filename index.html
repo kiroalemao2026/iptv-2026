@@ -6,8 +6,413 @@
     <title>Nexus TV</title>
     <link rel="stylesheet" href="estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== TELA DE SENHA ===== */
+        #tela-senha {
+            position: fixed;
+            inset: 0;
+            background: #0d0f1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .senha-card {
+            background: #161927;
+            border: 1px solid #2a2f4a;
+            border-radius: 20px;
+            padding: 44px 40px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .senha-card .logo-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #6c63ff, #00d4ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 30px;
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(108,99,255,0.4);
+        }
+
+        .senha-card h2 {
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #6c63ff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .senha-card p {
+            font-size: 14px;
+            color: #9ba3c7;
+            margin-bottom: 28px;
+        }
+
+        /* Campos de dígito individuais */
+        .digitos {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .digito {
+            width: 52px;
+            height: 64px;
+            background: #1e2236;
+            border: 2px solid #2a2f4a;
+            border-radius: 12px;
+            color: #e8eaf6;
+            font-size: 26px;
+            font-weight: 900;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            outline: none;
+            transition: all 0.2s;
+            caret-color: #6c63ff;
+        }
+
+        .digito:focus { border-color: #6c63ff; background: #1a1d30; box-shadow: 0 0 0 3px rgba(108,99,255,0.2); }
+        .digito.preenchido { border-color: #00d4ff; }
+
+        .btn-acessar {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6c63ff, #483cdb);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px rgba(108,99,255,0.35);
+        }
+
+        .btn-acessar:hover { filter: brightness(1.15); transform: translateY(-2px); }
+        .btn-acessar:active { transform: translateY(0); }
+        .btn-acessar:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+        #msg-senha-err {
+            margin-top: 14px;
+            font-size: 13px;
+            color: #ff4d4d;
+            min-height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .shake { animation: shake 0.4s ease; }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+    </style>
 </head>
 <body>
+
+    <!-- ===== TELA DE SENHA (aparece antes do player) ===== -->
+    <div id="tela-senha">
+        <div class="senha-card">
+            <div class="logo-icon"><i class="fas fa-tv"></i></div>
+            <h2>Nexus TV</h2>
+            <p>Digite sua senha de acesso de 6 dígitos</p>
+
+            <div class="digitos">
+                <input class="digito" type="tel" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]">
+                <input class="digito" type="tel" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]">
+                <input class="digito" type="tel" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]">
+                <input class="digito" type="tel" maxlength="1" id="d4" inputmode="numeric" pattern="[0-9]">
+                <input class="digito" type="tel" maxlength="1" id="d5" inputmode="numeric" pattern="[0-9]">
+                <input class="digito" type="tel" maxlength="1" id="d6" inputmode="numeric" pattern="[0-9]">
+            </div>
+
+            <button class="btn-acessar" id="btn-acessar" onclick="validarSenha()">
+                <i class="fas fa-unlock"></i> Acessar
+            </button>
+
+            <p id="msg-senha-err"></p>
+
+            <!-- Botão WhatsApp suporte -->
+            <div id="btn-suporte-inicial" style="display:none; margin-top:18px;">
+                <a id="link-suporte-inicial" href="#" target="_blank"
+                    style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;
+                    background:#25D366;border-radius:10px;color:#fff;text-decoration:none;
+                    font-size:14px;font-weight:700;transition:filter 0.2s;"
+                    onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
+                    <i class="fab fa-whatsapp" style="font-size:18px;"></i> Falar com Suporte
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // SISTEMA DE SENHA - Roda ANTES do app.js carregar
+        // ============================================================
+        const DIGITOS = ['d1','d2','d3','d4','d5','d6'];
+        let _whatsappSuporte = ''; // Carregado da API
+
+        // Carrega WhatsApp do suporte
+        fetch('/api/public-config').then(r => r.json()).then(cfg => {
+            if (cfg.whatsapp) {
+                _whatsappSuporte = cfg.whatsapp.replace(/\D/g, '');
+                const msgInicial = encodeURIComponent('Olá! Preciso de ajuda para acessar o Nexus TV.');
+                const linkInicial = document.getElementById('link-suporte-inicial');
+                if (linkInicial) {
+                    linkInicial.href = `https://wa.me/${_whatsappSuporte}?text=${msgInicial}`;
+                    document.getElementById('btn-suporte-inicial').style.display = 'block';
+                }
+            }
+        }).catch(() => {});
+
+        // Navegar entre campos ao digitar
+        DIGITOS.forEach((id, i) => {
+            const el = document.getElementById(id);
+            el.addEventListener('input', () => {
+                el.value = el.value.replace(/\D/g, '').slice(-1);
+                el.classList.toggle('preenchido', el.value !== '');
+                if (el.value && i < 5) document.getElementById(DIGITOS[i + 1]).focus();
+                if (getCodigo().length === 6) validarSenha();
+            });
+            el.addEventListener('keydown', e => {
+                if (e.key === 'Backspace' && !el.value && i > 0) {
+                    const prev = document.getElementById(DIGITOS[i - 1]);
+                    prev.value = '';
+                    prev.classList.remove('preenchido');
+                    prev.focus();
+                }
+                if (e.key === 'Enter') validarSenha();
+            });
+            // Colar código completo no primeiro campo
+            el.addEventListener('paste', e => {
+                e.preventDefault();
+                const txt = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+                if (txt.length >= 6) {
+                    DIGITOS.forEach((did, di) => {
+                        const d = document.getElementById(did);
+                        d.value = txt[di] || '';
+                        d.classList.toggle('preenchido', !!d.value);
+                    });
+                    document.getElementById(DIGITOS[5]).focus();
+                    if (getCodigo().length === 6) validarSenha();
+                }
+            });
+        });
+
+        function getCodigo() {
+            return DIGITOS.map(id => document.getElementById(id).value).join('');
+        }
+
+        function erroSenha(msg) {
+            const msgEl = document.getElementById('msg-senha-err');
+            msgEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+            const card = document.querySelector('.senha-card');
+            card.classList.remove('shake');
+            void card.offsetWidth; // reflow
+            card.classList.add('shake');
+            // Limpar campos
+            DIGITOS.forEach(id => {
+                const d = document.getElementById(id);
+                d.value = '';
+                d.classList.remove('preenchido');
+            });
+            document.getElementById('d1').focus();
+            document.getElementById('btn-acessar').disabled = false;
+        }
+
+        function liberarAcesso(codigo, nome) {
+            // Salva na sessão (com o código para poder re-validar)
+            sessionStorage.setItem('nexus_acesso', '1');
+            sessionStorage.setItem('nexus_codigo', codigo);
+            sessionStorage.setItem('nexus_nome', nome);
+            document.getElementById('tela-senha').style.transition = 'opacity 0.4s';
+            document.getElementById('tela-senha').style.opacity = '0';
+            setTimeout(() => { document.getElementById('tela-senha').remove(); }, 420);
+            iniciarVerificacaoPeriodica(codigo);
+        }
+
+        // ============================================================
+        // VERIFICAÇÃO PERIóDICA - A cada 60s confirma que a senha ainda é válida
+        // ============================================================
+        function iniciarVerificacaoPeriodica(codigo) {
+            setInterval(async () => {
+                try {
+                    const res = await fetch('/api/validar-senha', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ codigo })
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        bloquearAcesso(data.error || 'Seu acesso foi revogado.');
+                    }
+                } catch(e) {
+                    // Erro de rede: não bloquear (pode ser instabilidade temporária)
+                }
+            }, 60000); // 60 segundos
+        }
+
+        // Bloqueia a tela do cliente (chamado após revogação)
+        function bloquearAcesso(motivo) {
+            // Para o vídeo se estiver tocando
+            const video = document.getElementById('player-video');
+            if (video) { video.pause(); video.src = ''; }
+
+            // Limpa a sessão
+            sessionStorage.removeItem('nexus_acesso');
+            sessionStorage.removeItem('nexus_codigo');
+            sessionStorage.removeItem('nexus_nome');
+
+            // Cria/recria a tela de senha
+            let tela = document.getElementById('tela-senha');
+            if (!tela) {
+                tela = document.createElement('div');
+                tela.id = 'tela-senha';
+                document.body.insertBefore(tela, document.body.firstChild);
+            }
+            tela.style.opacity = '1';
+            tela.style.display = 'flex';
+            tela.innerHTML = `
+                <div class="senha-card">
+                    <div class="logo-icon" style="background:linear-gradient(135deg,#ff4d4d,#c0392b);"><i class="fas fa-ban"></i></div>
+                    <h2 style="background:linear-gradient(90deg,#ff4d4d,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Acesso Bloqueado</h2>
+                    <p style="color:#ff6b6b;margin-bottom:12px;">${motivo}</p>
+                    <p style="margin-bottom:20px;color:#9ba3c7;">Entre em contato com o suporte para renovar seu acesso.</p>
+                    <div id="slot-whatsapp-bloqueio" style="margin-bottom:16px;"></div>
+                    <div class="digitos">
+                        <input class="digito" type="tel" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]">
+                        <input class="digito" type="tel" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]">
+                        <input class="digito" type="tel" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]">
+                        <input class="digito" type="tel" maxlength="1" id="d4" inputmode="numeric" pattern="[0-9]">
+                        <input class="digito" type="tel" maxlength="1" id="d5" inputmode="numeric" pattern="[0-9]">
+                        <input class="digito" type="tel" maxlength="1" id="d6" inputmode="numeric" pattern="[0-9]">
+                    </div>
+                    <button class="btn-acessar" id="btn-acessar" onclick="validarSenha()">
+                        <i class="fas fa-unlock"></i> Tentar Nova Senha
+                    </button>
+                    <p id="msg-senha-err"></p>
+                </div>`;
+
+            // Função injetora do botão WhatsApp
+            const injetarBotaoWa = (num) => {
+                const slot = document.getElementById('slot-whatsapp-bloqueio');
+                if (!slot || !num) return;
+                const msg = encodeURIComponent('Olá! Meu acesso ao Nexus TV foi bloqueado. Preciso renovar minha senha.');
+                slot.innerHTML = `<a href="https://wa.me/${num}?text=${msg}" target="_blank"
+                    style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;
+                    background:#25D366;border-radius:10px;color:#fff;text-decoration:none;
+                    font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(37,211,102,0.35);">
+                    <i class="fab fa-whatsapp" style="font-size:20px;"></i> Falar com Suporte
+                </a>`;
+            };
+
+            if (_whatsappSuporte) {
+                // Já temos em memória → injeta imediato
+                injetarBotaoWa(_whatsappSuporte);
+            } else {
+                // Busca do servidor AGORA (não depende do fetch inicial ter terminado)
+                fetch('/api/public-config').then(r => r.json()).then(cfg => {
+                    if (cfg.whatsapp) {
+                        _whatsappSuporte = cfg.whatsapp.replace(/\D/g, '');
+                        injetarBotaoWa(_whatsappSuporte);
+                    }
+                }).catch(() => {});
+            }
+
+            // Reativar listeners dos dígitos
+            DIGITOS.forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', () => {
+                    el.value = el.value.replace(/\D/g, '').slice(-1);
+                    el.classList.toggle('preenchido', el.value !== '');
+                    if (el.value && i < 5) document.getElementById(DIGITOS[i + 1]).focus();
+                    if (getCodigo().length === 6) validarSenha();
+                });
+                el.addEventListener('keydown', e => {
+                    if (e.key === 'Backspace' && !el.value && i > 0) {
+                        const prev = document.getElementById(DIGITOS[i - 1]);
+                        prev.value = ''; prev.classList.remove('preenchido'); prev.focus();
+                    }
+                    if (e.key === 'Enter') validarSenha();
+                });
+            });
+            document.getElementById('d1').focus();
+        }
+
+        async function validarSenha() {
+            const codigo = getCodigo();
+            if (codigo.length < 6) {
+                document.getElementById('msg-senha-err').innerHTML = '<i class="fas fa-info-circle"></i> Digite todos os 6 dígitos.';
+                return;
+            }
+
+            const btn = document.getElementById('btn-acessar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+            document.getElementById('msg-senha-err').innerHTML = '';
+
+            try {
+                const res = await fetch('/api/validar-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    liberarAcesso(codigo, data.nome);
+                } else {
+                    btn.innerHTML = '<i class="fas fa-unlock"></i> Acessar';
+                    erroSenha(data.error || 'Senha inválida.');
+                }
+            } catch(e) {
+                btn.innerHTML = '<i class="fas fa-unlock"></i> Acessar';
+                erroSenha('Erro ao conectar ao servidor.');
+            }
+        }
+
+        // Se já validou nesta sessão, libera direto e inicia verificação periódica
+        const _codigoSalvo = sessionStorage.getItem('nexus_codigo');
+        if (sessionStorage.getItem('nexus_acesso') === '1' && _codigoSalvo) {
+            document.getElementById('tela-senha').remove();
+            iniciarVerificacaoPeriodica(_codigoSalvo);
+        } else {
+            // Limpa qualquer sessão incompleta
+            sessionStorage.removeItem('nexus_acesso');
+            sessionStorage.removeItem('nexus_codigo');
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('d1').focus();
+            });
+        }
+    </script>
+
     <div class="container">
         <!-- Cabeçalho -->
         <header class="cabecalho">
