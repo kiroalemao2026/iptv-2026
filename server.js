@@ -111,15 +111,82 @@ const server = http.createServer((req, res) => {
                 delete headers['content-length']; // Evita truncamento em conteúdo dinâmico
                 delete headers['transfer-encoding'];
 
-                res.writeHead(proxyRes.statusCode, {
-                    ...headers,
-                    'Content-Type': contentType,
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': '*',
-                    'Cache-Control': 'no-cache'
-                });
+                // Para manifesto HLS: ler body e reescrever URLs dos segmentos
+                const isManifest = contentType.includes('mpegurl') ||
+                    targetUrl.includes('.m3u8') || targetUrl.includes('output=m3u8');
 
-                proxyRes.pipe(res);
+                if (isManifest) {
+                    // Calcular base URL para resolver caminhos relativos
+                    let baseUrl = '';
+                    try {
+                        const parsed = new URL(targetUrl);
+                        // base = origem + caminho sem o último segmento
+                        const pathParts = parsed.pathname.split('/');
+                        pathParts.pop(); // remove o último elemento (ex: stream.m3u8)
+                        baseUrl = parsed.origin + pathParts.join('/') + '/';
+                    } catch(e) {
+                        baseUrl = '';
+                    }
+
+                    let body = '';
+                    proxyRes.setEncoding('utf8');
+                    proxyRes.on('data', chunk => { body += chunk; });
+                    proxyRes.on('end', () => {
+                        // Reescrever cada linha não-comentário que seja uma URL
+                        const linhasOriginais = body.split('\n');
+                        const linhasReescritas = linhasOriginais.map(linha => {
+                            const l = linha.trim();
+                            if (!l || l.startsWith('#')) return linha; // comentário/tag HLS
+
+                            let urlAbsoluta = l;
+                            if (l.startsWith('http://') || l.startsWith('https://')) {
+                                // Já é absoluta
+                                urlAbsoluta = l;
+                            } else if (l.startsWith('/')) {
+                                // Relativa ao origin
+                                try {
+                                    const parsed = new URL(targetUrl);
+                                    urlAbsoluta = parsed.origin + l;
+                                } catch(e) { urlAbsoluta = l; }
+                            } else if (baseUrl) {
+                                // Relativa ao diretório
+                                urlAbsoluta = baseUrl + l;
+                            }
+
+                            return '/proxy?url=' + encodeURIComponent(urlAbsoluta);
+                        });
+
+                        const manifesto = linhasReescritas.join('\n');
+                        const manifestoBuffer = Buffer.from(manifesto, 'utf8');
+                        console.log(`[Proxy] 📋 Manifesto reescrito (${linhasOriginais.length} linhas) | Base: ${baseUrl}`);
+
+                        res.writeHead(proxyRes.statusCode, {
+                            ...headers,
+                            'Content-Type': contentType,
+                            'Content-Length': manifestoBuffer.length,
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Headers': '*',
+                            'Cache-Control': 'no-cache'
+                        });
+                        res.end(manifestoBuffer);
+                    });
+                    proxyRes.on('error', (err) => {
+                        console.error('[Proxy] Erro lendo manifesto:', err.message);
+                        if (!res.headersSent) {
+                            res.writeHead(500);
+                            res.end('Erro ao ler manifesto');
+                        }
+                    });
+                } else {
+                    res.writeHead(proxyRes.statusCode, {
+                        ...headers,
+                        'Content-Type': contentType,
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Headers': '*',
+                        'Cache-Control': 'no-cache'
+                    });
+                    proxyRes.pipe(res);
+                }
             });
 
             proxyReq.on('error', (err) => {

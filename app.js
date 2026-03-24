@@ -92,6 +92,15 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
     configurarEventos();
     aplicarConfiguracoes();
+    // Inicializar slider de volume com volume padrão (100%)
+    if (elementos.controleVolume) {
+        elementos.controleVolume.value = 100;
+    }
+    if (elementos.player) {
+        elementos.player.volume = 1;
+        elementos.player.muted = false;
+    }
+    atualizarIconeVolume();
 });
 
 /* ==================== Cache Avançado (IndexedDB) ==================== */
@@ -712,10 +721,18 @@ function reproduzirCanal(canal) {
         estado.hls = null;
     }
 
+    // Salvar volume/muted antes de clonar
+    const volumeAnterior = elementos.player.volume;
+    const mutadoAnterior = elementos.player.muted;
+
     // Recriar o player para evitar acúmulo de listeners
     const novoPlayer = elementos.player.cloneNode(true);
     elementos.player.parentNode.replaceChild(novoPlayer, elementos.player);
     elementos.player = novoPlayer;
+
+    // Restaurar volume/muted no novo player
+    elementos.player.volume = volumeAnterior;
+    elementos.player.muted = mutadoAnterior;
     reconfigurarEventosPlayer();
 
     let urlOriginal = canal.url.trim();
@@ -828,7 +845,13 @@ function reproduzirCanal(canal) {
             estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 console.log(`[NexusTV] ✅ Funcionou! (${tentativa.label})`);
                 esconderTodasTelas();
-                elementos.player.play().catch(e => console.warn('[NexusTV] Autoplay:', e.message));
+                elementos.player.muted = false;
+                elementos.player.play().catch(e => {
+                    console.warn('[NexusTV] Autoplay bloqueado, tentando com mudo:', e.message);
+                    elementos.player.muted = true;
+                    elementos.player.play().catch(() => {});
+                });
+                atualizarIconeVolume();
             });
 
             estado.hls.on(Hls.Events.ERROR, (event, data) => {
@@ -853,6 +876,67 @@ function reproduzirCanal(canal) {
 
     const usarHls = isHLS || isXtreamLive;
 
+    // Adicionar entrada para HLS explícito (.m3u8) na cascata se ainda não estiver lá
+    if (isHLS && !isXtreamLive && cascata === null) {
+        // Reconstruir cascata HLS simples: proxy + sem proxy
+        const hlsCascata = [
+            { url: urlOriginal, proxy: true,  xhrProxy: true,  label: 'proxy .m3u8' },
+            { url: urlOriginal, proxy: false, xhrProxy: false, label: 'direto .m3u8' },
+        ];
+        // Usar cascata manual
+        let idx = 0;
+        function tentarHls() {
+            if (idx >= hlsCascata.length) {
+                mostrarErro('Canal indisponível ou sem sinal.');
+                return;
+            }
+            const t = hlsCascata[idx++];
+            const src = t.proxy ? PROXY_LOCAL + encodeURIComponent(t.url) : t.url;
+            if (estado.hls) { estado.hls.destroy(); estado.hls = null; }
+            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                console.log(`[NexusTV] ▶ HLS (${t.label}):`, t.url);
+                estado.hls = new Hls({
+                    maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
+                    maxMaxBufferLength: 60,
+                    enableWorker: true,
+                    manifestLoadingMaxRetry: 0,
+                    xhrSetup: t.xhrProxy ? function(xhr, url) {
+                        if (url.startsWith('/') || url.includes('localhost') || url.includes('127.0.0.1')) return;
+                        xhr.open('GET', PROXY_LOCAL + encodeURIComponent(url), true);
+                    } : undefined
+                });
+                estado.hls.loadSource(src);
+                estado.hls.attachMedia(elementos.player);
+                estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    console.log(`[NexusTV] ✅ HLS ok (${t.label})`);
+                    esconderTodasTelas();
+                    elementos.player.muted = false;
+                    elementos.player.play().catch(e => {
+                        console.warn('[NexusTV] Autoplay bloqueado, tentando com mudo:', e.message);
+                        elementos.player.muted = true;
+                        elementos.player.play().catch(() => {});
+                    });
+                    atualizarIconeVolume();
+                });
+                estado.hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        console.warn(`[NexusTV] ❌ HLS (${t.label}):`, data.details);
+                        estado.hls.destroy(); estado.hls = null;
+                        setTimeout(tentarHls, 200);
+                    }
+                });
+            } else if (elementos.player.canPlayType('application/vnd.apple.mpegurl')) {
+                elementos.player.src = src;
+                elementos.player.addEventListener('loadedmetadata', () => { esconderTodasTelas(); elementos.player.play(); }, { once: true });
+                elementos.player.addEventListener('error', () => tentarHls(), { once: true });
+            } else {
+                reproduzirDireto(urlOriginal);
+            }
+        }
+        tentarHls();
+        return;
+    }
+
     if (usarHls) {
         if (isXtreamLive) {
             tentarProximaUrl(); // cascata automática de 5 tentativas
@@ -869,7 +953,8 @@ function reproduzirCanal(canal) {
                 maxMaxBufferLength: 60,
                 enableWorker: true,
                 xhrSetup: function(xhr, url) {
-                    if (url.startsWith('/proxy') || url.includes('/proxy?url=')) return;
+                    // Não re-proxiar URLs já passando pelo proxy local
+                    if (url.startsWith('/') || url.includes('localhost') || url.includes('127.0.0.1')) return;
                     xhr.open('GET', PROXY_LOCAL + encodeURIComponent(url), true);
                 }
             });
@@ -879,7 +964,13 @@ function reproduzirCanal(canal) {
 
             estado.hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 esconderTodasTelas();
-                elementos.player.play().catch(e => console.warn('[NexusTV] Autoplay bloqueado:', e.message));
+                elementos.player.muted = false;
+                elementos.player.play().catch(e => {
+                    console.warn('[NexusTV] Autoplay bloqueado, tentando com mudo:', e.message);
+                    elementos.player.muted = true;
+                    elementos.player.play().catch(() => {});
+                });
+                atualizarIconeVolume();
             });
 
             let tentativas = 0;
@@ -1010,6 +1101,11 @@ function avoltarAvancar(segundos) {
 
 function toggleSom() {
     elementos.player.muted = !elementos.player.muted;
+    // Se desmutou e volume estava em 0, restaurar para 100%
+    if (!elementos.player.muted && elementos.player.volume === 0) {
+        elementos.player.volume = 1;
+    }
+    elementos.controleVolume.value = elementos.player.muted ? 0 : Math.round(elementos.player.volume * 100);
     atualizarIconeVolume();
 }
 
