@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -168,6 +168,14 @@
         .btn-danger { background: var(--danger); color: #fff; font-size: 12px; padding: 6px 12px; }
         .btn-danger:hover { filter: brightness(1.1); }
 
+        .btn-warn { background: rgba(255,140,0,0.15); color: #ff8c00; border: 1px solid rgba(255,140,0,0.35); font-size: 12px; padding: 6px 12px; }
+        .btn-warn:hover { background: rgba(255,140,0,0.3); }
+
+        .btn-success { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.35); font-size: 12px; padding: 6px 12px; }
+        .btn-success:hover { background: rgba(46,204,113,0.3); }
+
+        .row-bloqueada td { opacity: 0.55; }
+
         .btn-secondary {
             background: var(--surface2);
             border: 1px solid var(--border);
@@ -233,8 +241,9 @@
             font-weight: 700;
         }
 
-        .badge-ok { background: rgba(0,201,122,0.15); color: var(--success); }
-        .badge-exp { background: rgba(255,77,77,0.15); color: var(--danger); }
+        .badge-ok  { background: rgba(0,201,122,0.15); color: var(--success); }
+        .badge-exp { background: rgba(255,77,77,0.15);  color: var(--danger);  }
+        .badge-block { background: rgba(255,140,0,0.15); color: #ff8c00; border: 1px solid rgba(255,140,0,0.3); }
 
         .codigo-cell {
             font-family: 'Courier New', monospace;
@@ -341,6 +350,20 @@
             transition: all 0.2s;
         }
         .modal-btn-confirm:hover { filter: brightness(1.1); }
+        .modal-btn-warn {
+            padding: 10px 24px; border-radius: 8px;
+            background: #ff8c00; border: none;
+            color: #fff; cursor: pointer; font-size: 14px; font-weight: 700;
+            transition: all 0.2s;
+        }
+        .modal-btn-warn:hover { filter: brightness(1.1); }
+        .modal-btn-ok {
+            padding: 10px 24px; border-radius: 8px;
+            background: #2ecc71; border: none;
+            color: #fff; cursor: pointer; font-size: 14px; font-weight: 700;
+            transition: all 0.2s;
+        }
+        .modal-btn-ok:hover { filter: brightness(1.1); }
     </style>
 </head>
 <body>
@@ -631,23 +654,29 @@
             const expira = new Date(s.expira).toLocaleDateString('pt-BR');
             const criada = new Date(s.criada).toLocaleDateString('pt-BR');
             const diasRestantes = Math.max(0, Math.ceil((s.expira - agora) / 86400000));
-            const badge = s.expirada
-                ? '<span class="badge badge-exp">Expirada</span>'
-                : `<span class="badge badge-ok">✓ ${diasRestantes}d restantes</span>`;
+            let badge;
+            if (s.expirada) {
+                badge = '<span class="badge badge-exp">Expirada</span>';
+            } else if (!s.ativa) {
+                badge = '<span class="badge badge-block">&#x26D4; Bloqueada</span>';
+            } else {
+                badge = `<span class="badge badge-ok">&#x2713; ${diasRestantes}d restantes</span>`;
+            }
 
             const nomeEsc = s.nome.replace(/"/g, '&quot;');
-            return `<tr>
+            const rowClass = !s.ativa ? 'row-bloqueada' : s.expirada ? 'row-expirada' : '';
+            const btnAcesso = s.ativa
+                ? `<button class="btn btn-warn btn-bloquear" data-codigo="${s.codigo}" data-nome="${nomeEsc}" title="Bloquear"><i class="fas fa-lock"></i></button>`
+                : `<button class="btn btn-success btn-desbloquear" data-codigo="${s.codigo}" data-nome="${nomeEsc}" title="Desbloquear"><i class="fas fa-lock-open"></i></button>`;
+            return `<tr class="${rowClass}">
                 <td class="codigo-cell">${s.codigo}</td>
                 <td>${s.nome}</td>
                 <td>${criada}</td>
                 <td>${expira}</td>
                 <td>${badge}</td>
-                <td>
-                    <button class="btn btn-danger btn-revogar"
-                        data-codigo="${s.codigo}"
-                        data-nome="${nomeEsc}">
-                        <i class="fas fa-trash"></i> Revogar
-                    </button>
+                <td style="display:flex;gap:6px;">
+                    ${btnAcesso}
+                    <button class="btn btn-danger btn-excluir" data-codigo="${s.codigo}" data-nome="${nomeEsc}" title="Excluir permanentemente"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>`;
         }).join('');
@@ -666,63 +695,74 @@
             <tbody>${linhas}</tbody>
         </table>`;
 
-        // Adicionar listener nos botões Revogar via event delegation
-        container.querySelectorAll('.btn-revogar').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const codigo = btn.dataset.codigo;
-                const nome = btn.dataset.nome;
-                confirmarRevogacao(codigo, nome);
-            });
+        // Listeners dos botoes de acao
+        container.querySelectorAll('.btn-bloquear').forEach(btn => {
+            btn.addEventListener('click', () => abrirModal(btn.dataset.codigo, btn.dataset.nome, 'bloquear'));
+        });
+        container.querySelectorAll('.btn-desbloquear').forEach(btn => {
+            btn.addEventListener('click', () => abrirModal(btn.dataset.codigo, btn.dataset.nome, 'desbloquear'));
+        });
+        container.querySelectorAll('.btn-excluir').forEach(btn => {
+            btn.addEventListener('click', () => abrirModal(btn.dataset.codigo, btn.dataset.nome, 'excluir'));
         });
     }
 
-    // Modal customizado de confirmação (substitui o confirm() nativo)
-    function confirmarRevogacao(codigo, nome) {
-        // Remove qualquer modal anterior
+    // Modal universal para bloquear / desbloquear / excluir
+    function abrirModal(codigo, nome, acao) {
         const anterior = document.getElementById('modal-confirmacao');
         if (anterior) anterior.remove();
+
+        const cfgs = {
+            bloquear:    { icon: 'fa-lock',       cor: '#ff8c00', titulo: 'Bloquear Acesso',  msg: `Bloquear a senha <strong>${codigo}</strong> de <strong>${nome}</strong>?<br>O cliente perde o acesso imediatamente.`,          btnTxt: '<i class="fas fa-lock"></i> Bloquear',        btnCls: 'modal-btn-warn' },
+            desbloquear: { icon: 'fa-lock-open',  cor: '#2ecc71', titulo: 'Desbloquear',      msg: `Reativar o acesso de <strong>${nome}</strong> (${codigo})?`,                                                                   btnTxt: '<i class="fas fa-lock-open"></i> Desbloquear', btnCls: 'modal-btn-ok'      },
+            excluir:     { icon: 'fa-trash',      cor: '#e74c3c', titulo: 'Excluir Senha',    msg: `Excluir permanentemente a senha <strong>${codigo}</strong> de <strong>${nome}</strong>?<br>Esta acao nao pode ser desfeita.`, btnTxt: '<i class="fas fa-trash"></i> Excluir',         btnCls: 'modal-btn-confirm' }
+        };
+        const cfg = cfgs[acao];
 
         const overlay = document.createElement('div');
         overlay.id = 'modal-confirmacao';
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
             <div class="modal-box">
-                <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                <h3>Revogar Acesso</h3>
-                <p>Deseja revogar a senha <strong>${codigo}</strong> de <strong>${nome}</strong>?<br>O cliente perderá o acesso imediatamente.</p>
+                <div class="modal-icon" style="color:${cfg.cor}"><i class="fas ${cfg.icon}"></i></div>
+                <h3>${cfg.titulo}</h3>
+                <p>${cfg.msg}</p>
                 <div class="modal-btns">
                     <button class="modal-btn-cancel" id="modal-cancelar">Cancelar</button>
-                    <button class="modal-btn-confirm" id="modal-confirmar"><i class="fas fa-trash"></i> Revogar</button>
+                    <button class="${cfg.btnCls}" id="modal-confirmar">${cfg.btnTxt}</button>
                 </div>
             </div>`;
 
         document.body.appendChild(overlay);
-
         document.getElementById('modal-cancelar').onclick = () => overlay.remove();
         overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-
         document.getElementById('modal-confirmar').onclick = async () => {
             overlay.remove();
-            await executarRevogacao(codigo);
+            await executarAcao(acao, codigo);
         };
     }
 
-    async function executarRevogacao(codigo) {
+    async function executarAcao(acao, codigo) {
+        const mapa = {
+            bloquear:    { endpoint: '/api/bloquear-senha',    msg: 'Acesso bloqueado!' },
+            desbloquear: { endpoint: '/api/desbloquear-senha', msg: 'Acesso desbloqueado!' },
+            excluir:     { endpoint: '/api/excluir-senha',     msg: 'Senha excluida permanentemente.' }
+        };
         try {
-            const res = await fetch('/api/revogar-senha', {
+            const res = await fetch(mapa[acao].endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ senha_admin: SENHA_ADMIN, codigo })
             });
             const data = await res.json();
             if (data.success) {
-                toast('Senha revogada com sucesso.', 'ok');
+                toast(mapa[acao].msg, 'ok');
                 carregarSenhas();
             } else {
-                toast(data.error || 'Erro ao revogar.', 'err');
+                toast(data.error || 'Erro.', 'err');
             }
         } catch(e) {
-            toast('Erro ao revogar senha.', 'err');
+            toast('Erro de conexao.', 'err');
         }
     }
 
