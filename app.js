@@ -1153,8 +1153,10 @@ function reproduzirDireto(url) {
     
     // Fila de tentativas para reprodução direta (o erro 502 no Railway será contornado pela tentativa Direta)
     const tentativas = [
-        { src: urlProxy, label: 'Proxy Node (Railway)' },
-        { src: url, label: 'Direto (Navegador)' }
+        { src: urlProxy, label: 'Proxy Interno (Railway)' },
+        { src: 'https://corsproxy.io/?' + encodeURIComponent(url), label: 'CORS Proxy Público 1' },
+        { src: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), label: 'CORS Proxy Público 2' },
+        { src: url, label: 'Direto Original (Navegador)' }
     ];
     
     // Se era http, injetamos uma tentativa forçada de HTTPS no final (em caso de bloqueio Mixed Content e 403 do Provider)
