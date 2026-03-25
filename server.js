@@ -55,14 +55,36 @@ if (fs.existsSync('./senhas.json')) {
     } catch(e) { console.warn('[DB] Falha ao migrar senhas.json:', e.message); }
 }
 
+// Mapeamento de chaves de config para variáveis de ambiente
+const ENV_CONFIG = {
+    'url':       'IPTV_URL',
+    'whatsapp':  'IPTV_WHATSAPP',
+};
+
 // Helpers de config
 function getConfig(chave) {
     const row = db.prepare('SELECT valor FROM config WHERE chave = ?').get(chave);
-    return row ? row.valor : '';
+    if (row && row.valor) return row.valor;
+    // Fallback: variável de ambiente (Railway persiste entre deploys)
+    const envKey = ENV_CONFIG[chave];
+    return envKey && process.env[envKey] ? process.env[envKey] : '';
 }
 function setConfig(chave, valor) {
     db.prepare('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)').run(chave, valor);
 }
+
+// Repopular DB com env vars no startup (resolve perda de dados após deploy no Railway)
+(function sincronizarEnvVarsParaDB() {
+    for (const [chave, envKey] of Object.entries(ENV_CONFIG)) {
+        const envVal = process.env[envKey];
+        if (!envVal) continue;
+        const existente = db.prepare('SELECT valor FROM config WHERE chave = ?').get(chave);
+        if (!existente || !existente.valor) {
+            db.prepare('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)').run(chave, envVal);
+            console.log(`[Config] '${chave}' restaurado da env var ${envKey}`);
+        }
+    }
+})();
 
 // Helpers de senhas
 function gerarSenha6Digitos() {
@@ -82,7 +104,9 @@ const PORT = process.env.PORT || 3000;
 const mimeTypes = {
     '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
     '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg',
-    '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon'
+    '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+    '.apk': 'application/vnd.android.package-archive',
+    '.exe': 'application/x-msdownload'
 };
 
 const server = http.createServer((req, res) => {
