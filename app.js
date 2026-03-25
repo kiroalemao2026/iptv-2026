@@ -888,15 +888,17 @@ function reproduzirCanal(canal) {
 
         if (typeof Hls !== 'undefined' && Hls.isSupported()) {
             estado.hls = new Hls({
-                maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
+                maxBufferLength: 30, 
                 maxMaxBufferLength: 60,
+                maxBufferSize: 60 * 1000 * 1000,
+                backBufferLength: 30,
                 enableWorker: true,
-                lowLatencyMode: true,
+                lowLatencyMode: false, 
                 liveDurationInfinity: true,
-                manifestLoadingTimeOut: 8000,
-                manifestLoadingMaxRetry: 0,  // sem retry interno — nós controlamos
-                levelLoadingTimeOut: 8000,
-                fragLoadingTimeOut: 20000,
+                manifestLoadingTimeOut: 15000,
+                manifestLoadingMaxRetry: 0,
+                levelLoadingTimeOut: 15000,
+                fragLoadingTimeOut: 30000,
                 xhrSetup: tentativa.xhrProxy
                     ? function(xhr, url) {
                         if (url.startsWith('/proxy') || url.startsWith('/hls-ts') || url.includes('localhost')) return;
@@ -970,8 +972,10 @@ function reproduzirCanal(canal) {
             if (typeof Hls !== 'undefined' && Hls.isSupported()) {
                 console.log(`[NexusTV] ▶ HLS (${t.label}):`, t.url);
                 estado.hls = new Hls({
-                    maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
+                    maxBufferLength: 30,
                     maxMaxBufferLength: 60,
+                    maxBufferSize: 60 * 1000 * 1000,
+                    backBufferLength: 30,
                     enableWorker: true,
                     manifestLoadingMaxRetry: 0,
                     xhrSetup: t.xhrProxy ? function(xhr, url) {
@@ -1023,11 +1027,12 @@ function reproduzirCanal(canal) {
             console.log('[NexusTV] ▶ HLS direto:', urlOriginal);
 
             estado.hls = new Hls({
-                maxBufferLength: Math.max(estado.config?.buffer || 3, 10),
+                maxBufferLength: 30,
                 maxMaxBufferLength: 60,
+                maxBufferSize: 60 * 1000 * 1000,
+                backBufferLength: 30,
                 enableWorker: true,
                 xhrSetup: function(xhr, url) {
-                    // Não re-proxiar URLs já passando pelo proxy local
                     if (url.startsWith('/') || url.includes('localhost') || url.includes('127.0.0.1')) return;
                     xhr.open('GET', PROXY_LOCAL + encodeURIComponent(url), true);
                 }
@@ -1109,6 +1114,8 @@ function reproduzirVOD(url) {
         estado.hls = new Hls({
             maxBufferLength: 30,
             maxMaxBufferLength: 120,
+            maxBufferSize: 60 * 1000 * 1000,
+            backBufferLength: 30,
             enableWorker: true,
             manifestLoadingMaxRetry: 1,
             xhrSetup: function(xhr, xhrUrl) {

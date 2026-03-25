@@ -508,7 +508,7 @@ const server = http.createServer((req, res) => {
             try { targetUrl = decodeURIComponent(targetUrl.slice('/proxy?url='.length)); } catch(e) { break; }
         }
 
-        console.log(`[Proxy] -> ${targetUrl}`);
+        // console.log(`[Proxy] -> ${targetUrl}`); // Log removido para performance
 
         // Perfis de headers para tentar em caso de 403/401 (simula clientes IPTV legítimos)
         const PERFIS_HEADERS = [
@@ -585,7 +585,7 @@ const server = http.createServer((req, res) => {
                     if (novaUrl.startsWith('/')) {
                         try { const p = new URL(targetUrl); novaUrl = p.origin + novaUrl; } catch(e) {}
                     }
-                    console.log(`[Proxy] Redirect ${proxyRes.statusCode} -> ${novaUrl}`);
+                    // console.log(`[Proxy] Redirect ${proxyRes.statusCode} -> ${novaUrl}`);
                     proxyRes.resume();
                     fazerRequisicao(novaUrl, tentativas + 1, perfilIdx);
                     return;
@@ -595,7 +595,7 @@ const server = http.createServer((req, res) => {
                 if ((proxyRes.statusCode === 403 || proxyRes.statusCode === 401) && perfilIdx < PERFIS_HEADERS.length - 1) {
                     proxyRes.resume();
                     const proximoPerfil = perfilIdx + 1;
-                    console.warn(`[Proxy] ${proxyRes.statusCode} com perfil ${perfilIdx} → tentando perfil ${proximoPerfil} (UA: ${PERFIS_HEADERS[proximoPerfil]['User-Agent'].split('/')[0]})`);
+                    // console.warn(`[Proxy] ${proxyRes.statusCode} com perfil ${perfilIdx} → tentando perfil ${proximoPerfil} (UA: ${PERFIS_HEADERS[proximoPerfil]['User-Agent'].split('/')[0]})`);
                     setTimeout(() => fazerRequisicao(targetUrl, tentativas + 1, proximoPerfil), 300);
                     return;
                 }
@@ -605,12 +605,12 @@ const server = http.createServer((req, res) => {
                     proxyRes.resume();
                     // Remove porta 80 explícita (incompatível com HTTPS)
                     const urlHttps = targetUrl.replace('http://', 'https://').replace(/:80\//, '/').replace(/:80$/, '');
-                    console.warn(`[Proxy] 403 persistente → tentando HTTPS: ${urlHttps}`);
+                    // console.warn(`[Proxy] 403 persistente → tentando HTTPS: ${urlHttps}`);
                     setTimeout(() => fazerRequisicao(urlHttps, tentativas + 1, 0), 300);
                     return;
                 }
 
-                console.log(`[Proxy] Resposta: ${proxyRes.statusCode} | Content-Type: ${proxyRes.headers['content-type']} | URL: ${targetUrl}`);
+                // console.log(`[Proxy] Resposta: ${proxyRes.statusCode} | Content-Type: ${proxyRes.headers['content-type']} | URL: ${targetUrl}`);
 
                 let contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
                 if (targetUrl.includes('.m3u8') || targetUrl.includes('output=m3u8')) {
@@ -662,7 +662,7 @@ const server = http.createServer((req, res) => {
                         });
                         const manifesto = linhasReescritas.join('\n');
                         const manifestoBuffer = Buffer.from(manifesto, 'utf8');
-                        console.log(`[Proxy] Manifesto reescrito (${linhasOriginais.length} linhas) | Base: ${baseUrl}`);
+                        // console.log(`[Proxy] Manifesto reescrito (${linhasOriginais.length} linhas) | Base: ${baseUrl}`);
                         res.writeHead(proxyRes.statusCode, {
                             ...headers,
                             'Content-Type': contentType,
