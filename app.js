@@ -272,6 +272,12 @@ function configurarEventos() {
     
     // Busca
     elementos.buscaCanal.addEventListener('input', filtrarCanais);
+    elementos.buscaCanal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && estado.canaisFiltrados.length > 0) {
+            _selecionarCanalObj(estado.canaisFiltrados[0], estado.canaisFiltrados[0].id);
+            elementos.buscaCanal.blur();
+        }
+    });
     
     // Scroll infinito para renderizar mais canais quando chega perto do fim
     elementos.listaCanais.addEventListener('scroll', () => {
