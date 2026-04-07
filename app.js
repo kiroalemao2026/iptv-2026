@@ -278,6 +278,12 @@ function configurarEventos() {
             elementos.buscaCanal.blur();
         }
     });
+
+    // Evento do Microfone no Navegador
+    const btnVozWeb = document.getElementById('btn-voz-web');
+    if (btnVozWeb) {
+        btnVozWeb.addEventListener('click', iniciarVozWeb);
+    }
     
     // Scroll infinito para renderizar mais canais quando chega perto do fim
     elementos.listaCanais.addEventListener('scroll', () => {
@@ -1582,6 +1588,63 @@ function manipularTeclas(e) {
             proximoCanal();
             break;
     }
+}
+
+// ==================== Reconhecimento de Voz Web ====================
+function iniciarVozWeb() {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+        mostrarToast('Seu navegador não suporta busca por voz.', 'erro');
+        return;
+    }
+
+    const recognition = new Recognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    const btn = document.getElementById('btn-voz-web');
+
+    recognition.onstart = () => {
+        btn.classList.add('ouvindo');
+        btn.title = 'Ouvindo...';
+        mostrarToast('Pode falar o nome do canal...', 'info');
+    };
+
+    recognition.onresult = (event) => {
+        const resultado = event.results[0][0].transcript;
+        elementos.buscaCanal.value = resultado;
+        btn.classList.remove('ouvindo');
+        btn.title = 'Buscar por voz';
+        
+        // Disparar o filtro
+        filtrarCanais();
+        
+        // Pequeno delay para o filtro rodar e selecionar o primeiro
+        setTimeout(() => {
+            if (estado.canaisFiltrados.length > 0) {
+                _selecionarCanalObj(estado.canaisFiltrados[0], estado.canaisFiltrados[0].id);
+                mostrarToast(`Buscando por: "${resultado}"`, 'sucesso');
+            }
+        }, 300);
+    };
+
+    recognition.onerror = (event) => {
+        btn.classList.remove('ouvindo');
+        btn.title = 'Buscar por voz';
+        if (event.error === 'not-allowed') {
+            mostrarToast('Permissão de microfone negada.', 'erro');
+        } else {
+            console.error('Erro voz:', event.error);
+        }
+    };
+
+    recognition.onend = () => {
+        btn.classList.remove('ouvindo');
+        btn.title = 'Buscar por voz';
+    };
+
+    recognition.start();
 }
 
 // Expor funções globais para onclick

@@ -310,7 +310,7 @@ body {
 .busca-container { position: relative; margin-bottom: 10px; }
 .campo-busca {
     width: 100%;
-    padding: 12px 14px 12px 42px;
+    padding: 12px 40px 12px 42px;
     background: var(--bg-surface-2);
     border: 1px solid var(--borda);
     border-radius: var(--raio-sm);
@@ -334,6 +334,26 @@ body {
     transform: translateY(-50%);
     color: var(--texto-terciario);
     font-size: 0.85rem;
+}
+.icone-voz {
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--texto-terciario);
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: var(--transicao);
+}
+.icone-voz:hover { color: var(--primary-accent); }
+.icone-voz.ouvindo {
+    color: var(--netflix-red);
+    animation: pulsar-voz 1.5s infinite;
+}
+@keyframes pulsar-voz {
+    0% { transform: translateY(-50%) scale(1); opacity: 1; }
+    50% { transform: translateY(-50%) scale(1.3); opacity: 0.7; }
+    100% { transform: translateY(-50%) scale(1); opacity: 1; }
 }
 
 /* ==================== Lista de Canais ==================== */
