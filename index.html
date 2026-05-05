@@ -11,14 +11,14 @@
 
         /* ===== TELA DE SENHA PREMIUM ===== */
         :root {
-            --primary-accent: #3b82f6; /* Modern cool blue */
-            --primary-accent-glow: rgba(59, 130, 246, 0.4);
-            --secondary-accent: #8b5cf6; /* Sleek purple */
-            --bg-dark: #03040b;
-            --card-bg: rgba(10, 12, 20, 0.6);
-            --card-border: rgba(255, 255, 255, 0.06);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --primary-accent: #2563eb; 
+            --primary-accent-glow: rgba(37, 99, 235, 0.4);
+            --secondary-accent: #3b82f6; 
+            --bg-dark: #f8fafc; /* Fundo branco/gelo */
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
         }
 
         #tela-senha {
@@ -69,8 +69,8 @@
             inset: 0;
             z-index: 0;
             background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+                linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
             background-size: 60px 60px;
             mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 80%);
             -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 80%);
@@ -88,19 +88,20 @@
             z-index: 10;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 24px;
-            padding: 48px;
+            border-radius: 28px;
+            padding: 44px 40px;
             width: 100%;
             max-width: 420px;
             text-align: center;
             box-shadow: 
-                0 30px 60px rgba(0, 0, 0, 0.6), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
+                0 24px 48px rgba(0, 0, 0, 0.08), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
             transform: translateY(20px);
             opacity: 0;
             animation: cardReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            margin: 20px;
         }
 
         @keyframes cardReveal {
@@ -111,47 +112,45 @@
         .logo-wrapper {
             position: relative;
             display: inline-flex;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
         .logo-glow {
             position: absolute;
-            inset: -15px;
+            inset: -10px;
             border-radius: 50%;
             background: var(--primary-accent);
-            filter: blur(30px);
-            opacity: 0.4;
+            filter: blur(28px);
+            opacity: 0.35;
             animation: logoPulse 4s ease-in-out infinite;
         }
 
         .senha-card .logo-icon {
             position: relative;
-            width: 120px;
-            height: 120px;
-            border-radius: 30px;
+            width: 88px;
+            height: 88px;
+            border-radius: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            background: transparent;
+            background: rgba(0, 0, 0, 0.03);
             box-shadow: 
-                0 16px 40px rgba(0,0,0,0.5);
-            border: none;
-            font-size: 36px;
-            color: #fff;
+                0 12px 32px rgba(0,0,0,0.08),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .senha-card .logo-icon img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            transform: scale(1);
-            mix-blend-mode: multiply;
+            object-fit: cover;
+            transform: scale(1.05);
         }
 
         @keyframes logoPulse {
-            0%, 100% { transform: scale(0.9); opacity: 0.3; }
-            50%      { transform: scale(1.1); opacity: 0.5; }
+            0%, 100% { transform: scale(0.95); opacity: 0.25; }
+            50%      { transform: scale(1.1); opacity: 0.45; }
         }
 
         /* Tipografia Premium */
@@ -159,26 +158,26 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
             border-radius: 100px;
             padding: 6px 14px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
-            color: var(--text-muted);
-            letter-spacing: 1px;
+            color: #93c5fd;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
             margin-bottom: 16px;
             backdrop-filter: blur(10px);
         }
         
         .badge-premium i {
-            color: var(--secondary-accent);
+            color: #60a5fa;
             font-size: 11px;
         }
 
         .senha-card h2 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
             color: var(--text-main);
             margin-bottom: 8px;
@@ -188,48 +187,49 @@
         .senha-card .subtitulo {
             font-size: 14px;
             color: var(--text-muted);
-            margin-bottom: 36px;
+            margin-bottom: 32px;
             font-weight: 400;
             line-height: 1.5;
+            padding: 0 10px;
         }
 
         /* Inputs de Senha Premium */
         .digitos {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             justify-content: center;
             margin-bottom: 32px;
         }
 
         .digito {
-            width: 48px;
-            height: 60px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 44px;
+            height: 56px;
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 12px;
             color: var(--text-main);
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 600;
             text-align: center;
             font-family: 'Inter', monospace;
             outline: none;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             caret-color: var(--primary-accent);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
 
         .digito:focus {
             border-color: var(--primary-accent);
             background: rgba(59, 130, 246, 0.05);
             box-shadow: 
-                0 0 0 4px rgba(59, 130, 246, 0.15),
-                inset 0 2px 4px rgba(0,0,0,0.5);
+                0 0 0 3px rgba(59, 130, 246, 0.2),
+                inset 0 2px 4px rgba(0,0,0,0.02);
             transform: translateY(-2px);
         }
 
         .digito.preenchido {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(0, 0, 0, 0.2);
+            background: #ffffff;
             animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -243,10 +243,10 @@
         .btn-acessar {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, var(--primary-accent) 0%, #2563eb 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 14px;
-            color: #fff;
+            color: #0f172a;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
@@ -254,19 +254,19 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             box-shadow: 
-                0 4px 15px rgba(37, 99, 235, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                0 4px 15px rgba(37, 99, 235, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
             letter-spacing: 0.3px;
         }
 
         .btn-acessar:hover:not(:disabled) { 
             box-shadow: 
-                0 8px 25px rgba(37, 99, 235, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                0 8px 25px rgba(37, 99, 235, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
             transform: translateY(-2px);
-            filter: brightness(1.1);
+            filter: brightness(1.05);
         }
 
         .btn-acessar:active:not(:disabled) { 
@@ -277,8 +277,8 @@
         .btn-acessar:disabled { 
             opacity: 0.6; 
             cursor: not-allowed;
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.05);
+            border-color: rgba(0,0,0,0.05);
             color: var(--text-muted);
             box-shadow: none;
         }
@@ -312,7 +312,7 @@
             content: '';
             flex: 1;
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
         }
 
         .divisor-container span {
@@ -331,35 +331,36 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             width: 100%;
             padding: 14px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 14px;
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
             transition: all 0.2s ease;
         }
 
         .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.15);
             color: var(--text-main);
+            transform: translateY(-1px);
         }
         
         .btn-outline.wa:hover {
             border-color: rgba(37, 211, 102, 0.4);
             color: #25D366;
-            background: rgba(37, 211, 102, 0.05);
+            background: rgba(37, 211, 102, 0.08);
         }
 
         .btn-outline i { font-size: 16px; }
 
         .texto-suporte {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-muted);
             margin-top: 24px;
         }
@@ -384,20 +385,219 @@
             40%, 60% { transform: translate3d(4px, 0, 0); }
         }
 
+        /* ===== ESTILOS DA TELA REVOGADO ===== */
+        .senha-card.revoked-card {
+            border-top: 4px solid rgba(239, 68, 68, 0.8);
+            padding: 40px;
+        }
+
+        .alert-icon-wrapper {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px auto;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(185, 28, 28, 0.1) 100%);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #ef4444;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15);
+            animation: pulseAlert 3s infinite ease-in-out;
+        }
+
+        .alert-icon-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: -15px;
+            border-radius: 35px;
+            background: #ef4444;
+            filter: blur(25px);
+            opacity: 0.15;
+            z-index: -1;
+        }
+
+        @keyframes pulseAlert {
+            0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15); }
+            50% { transform: scale(1.05); box-shadow: 0 8px 40px rgba(239, 68, 68, 0.3); }
+        }
+
+        .badge-danger {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 100px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fca5a5;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .revoked-text-container {
+            margin-bottom: 32px;
+        }
+
+        .revoked-text-container h2 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .revoked-text-container p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .revoked-text-container p.motivo {
+            color: #0f172a;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .btn-whatsapp-support {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #25D366 0%, #1da851 100%);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 14px;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 
+                0 4px 15px rgba(37, 211, 102, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            text-decoration: none;
+        }
+
+        .btn-whatsapp-support:hover {
+            box-shadow: 
+                0 8px 25px rgba(37, 211, 102, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-whatsapp-support i {
+            font-size: 18px;
+        }
+
+        .restore-section {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 20px;
+            padding: 24px;
+            margin-top: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .restore-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        }
+
+        .restore-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+        
+        .restore-title::before, .restore-title::after {
+            content: '';
+            height: 1px;
+            flex: 1;
+            background: #ffffff;
+        }
+
+        .restore-section .digito {
+            width: 42px;
+            height: 52px;
+            font-size: 22px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+        }
+        
+        .restore-section .digitos {
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .btn-tentar-nova {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            color: var(--text-main);
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-tentar-nova:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
         /* Responsividade */
         @media (max-width: 480px) {
             .senha-card {
-                padding: 40px 24px;
-                border: none;
-                border-radius: 0;
-                background: transparent;
-                box-shadow: none;
-                backdrop-filter: none;
+                padding: 32px 24px;
+                border-radius: 24px;
+                margin: 16px;
+            }
+            .senha-card h2 {
+                font-size: 24px;
+            }
+            .digitos {
+                gap: 6px;
             }
             .digito {
-                width: 44px;
-                height: 56px;
-                font-size: 24px;
+                width: 40px;
+                height: 52px;
+                font-size: 22px;
+            }
+            .restore-section .digitos {
+                gap: 4px;
+            }
+            .restore-section .digito {
+                width: 38px;
+                height: 48px;
+                font-size: 20px;
             }
         }
     </style>
@@ -477,7 +677,6 @@
                 el.value = el.value.replace(/\D/g, '').slice(-1);
                 el.classList.toggle('preenchido', el.value !== '');
                 if (el.value && i < 5) document.getElementById(DIGITOS[i + 1]).focus();
-                if (getCodigo().length === 6) validarSenha();
             });
             el.addEventListener('keydown', e => {
                 if (e.key === 'Backspace' && !el.value && i > 0) {
@@ -499,7 +698,6 @@
                         d.classList.toggle('preenchido', !!d.value);
                     });
                     document.getElementById(DIGITOS[5]).focus();
-                    if (getCodigo().length === 6) validarSenha();
                 }
             });
         });
@@ -579,33 +777,35 @@
             tela.style.display = 'flex';
             tela.innerHTML = `
                 <div class="ambient-grid"></div>
-                <div class="senha-card">
-                    <div class="logo-wrapper">
-                        <div class="logo-glow" style="background: #ef4444;"></div>
-                        <div class="logo-icon" style="background:linear-gradient(135deg,#ff4d4d,#c0392b); border:none; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);"><i class="fas fa-ban"></i></div>
+                <div class="senha-card revoked-card">
+                    <div class="alert-icon-wrapper">
+                        <i class="fas fa-ban"></i>
                     </div>
-                    <div class="badge-premium" style="color: #ef4444; border-color: rgba(239,68,68,0.2);"><i class="fas fa-lock" style="color:#ef4444;"></i> Acesso Bloqueado</div>
-                    <h2>Acesso Revogado</h2>
-                    <p class="subtitulo" style="margin-bottom: 24px;">${motivo}</p>
-                    <p style="margin-bottom:24px;color:var(--text-muted);font-size:14px;">Entre em contato com o suporte para renovar seu acesso.</p>
-                    <div id="slot-whatsapp-bloqueio" style="margin-bottom:32px;"></div>
+                    <div class="badge-danger">
+                        <i class="fas fa-lock"></i> Acesso Bloqueado
+                    </div>
+                    <div class="revoked-text-container">
+                        <h2>Acesso Revogado</h2>
+                        <p class="motivo">${motivo}</p>
+                        <p>Entre em contato com o suporte para renovar seu acesso.</p>
+                    </div>
+                    <div id="slot-whatsapp-bloqueio"></div>
                     
-                    <div class="divisor-container">
-                        <span>Restaurar Acesso</span>
+                    <div class="restore-section">
+                        <div class="restore-title">Restaurar Acesso</div>
+                        <div class="digitos">
+                            <input class="digito" type="tel" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                            <input class="digito" type="tel" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                            <input class="digito" type="tel" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                            <input class="digito" type="tel" maxlength="1" id="d4" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                            <input class="digito" type="tel" maxlength="1" id="d5" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                            <input class="digito" type="tel" maxlength="1" id="d6" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                        </div>
+                        <button class="btn-tentar-nova" id="btn-acessar" onclick="validarSenha()">
+                            <i class="fas fa-unlock"></i> Tentar Nova Senha
+                        </button>
+                        <p id="msg-senha-err" style="margin-top: 12px; margin-bottom: 0;"></p>
                     </div>
-
-                    <div class="digitos">
-                        <input class="digito" type="tel" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="digito" type="tel" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="digito" type="tel" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="digito" type="tel" maxlength="1" id="d4" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="digito" type="tel" maxlength="1" id="d5" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="digito" type="tel" maxlength="1" id="d6" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                    </div>
-                    <button class="btn-acessar" id="btn-acessar" onclick="validarSenha()">
-                        <i class="fas fa-unlock"></i> Tentar Nova Senha
-                    </button>
-                    <p id="msg-senha-err"></p>
                 </div>`;
 
             // Função injetora do botão WhatsApp
@@ -613,9 +813,8 @@
                 const slot = document.getElementById('slot-whatsapp-bloqueio');
                 if (!slot || !num) return;
                 const msg = encodeURIComponent('Olá! Meu acesso ao 064 IPTV foi bloqueado. Preciso renovar minha senha.');
-                slot.innerHTML = `<a href="https://wa.me/${num}?text=${msg}" target="_blank"
-                    class="btn-acessar" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
-                    <i class="fab fa-whatsapp" style="font-size:18px;"></i> Falar com Suporte
+                slot.innerHTML = `<a href="https://wa.me/${num}?text=${msg}" target="_blank" class="btn-whatsapp-support">
+                    <i class="fab fa-whatsapp"></i> Falar com Suporte
                 </a>`;
             };
 

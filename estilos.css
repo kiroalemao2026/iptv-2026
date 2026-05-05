@@ -9,23 +9,23 @@
     --netflix-red: #ef4444; /* Modernized Red */
     --netflix-red-dark: #b91c1c;
     
-    --bg-body: #03040b;
-    --bg-surface: rgba(10, 12, 20, 0.6);
-    --bg-surface-2: rgba(255, 255, 255, 0.03);
-    --bg-surface-3: rgba(255, 255, 255, 0.05);
+    --bg-body: #f8fafc;
+    --bg-surface: rgba(255, 255, 255, 0.8);
+    --bg-surface-2: rgba(0, 0, 0, 0.03);
+    --bg-surface-3: rgba(0, 0, 0, 0.06);
     --bg-hover: rgba(59, 130, 246, 0.1);
-    --bg-card: rgba(15, 18, 30, 0.8);
+    --bg-card: rgba(255, 255, 255, 0.95);
 
-    --texto-primario: #f8fafc;
-    --texto-secundario: #94a3b8;
+    --texto-primario: #0f172a;
+    --texto-secundario: #475569;
     --texto-terciario: #64748b;
     --texto-branco: #ffffff;
 
-    --borda: rgba(255, 255, 255, 0.06);
+    --borda: rgba(0, 0, 0, 0.08);
     --borda-foco: var(--primary-accent);
 
-    --sombra: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    --sombra-card: 0 10px 30px rgba(0,0,0,0.5);
+    --sombra: 0 20px 40px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    --sombra-card: 0 8px 20px rgba(0,0,0,0.05);
 
     --raio: 20px;
     --raio-sm: 12px;
@@ -57,8 +57,8 @@ body {
     background-image: 
         radial-gradient(circle at top left, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
         radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
     background-size: 100% 100%, 100% 100%, 60px 60px, 60px 60px;
     background-attachment: fixed;
     color: var(--texto-primario);
@@ -91,7 +91,7 @@ body {
     font-size: 1.8rem;
     font-weight: 800;
     letter-spacing: -0.5px;
-    color: var(--texto-branco);
+    color: var(--texto-primario);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -103,7 +103,7 @@ body {
 .botao-primario {
     background: linear-gradient(135deg, var(--primary-accent) 0%, var(--primary-accent-dark) 100%);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     padding: 10px 22px;
     border-radius: var(--raio-sm);
     font-size: 0.9rem;
@@ -122,9 +122,9 @@ body {
     filter: brightness(1.1);
 }
 .botao-secundario {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(0, 0, 0, 0.03);
     color: var(--texto-secundario);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     padding: 10px 22px;
     border-radius: var(--raio-sm);
     font-size: 0.9rem;
@@ -137,14 +137,14 @@ body {
     font-family: 'Inter', sans-serif;
 }
 .botao-secundario:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: var(--texto-branco);
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--texto-primario);
 }
 .botao-perigo {
     background: linear-gradient(135deg, var(--netflix-red) 0%, var(--netflix-red-dark) 100%);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     padding: 10px 22px;
     border-radius: var(--raio-sm);
     font-size: 0.9rem;
@@ -452,7 +452,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(10, 12, 20, 0.85);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     gap: 16px;
     text-align: center;
@@ -465,7 +465,7 @@ body {
     margin-bottom: 8px;
     filter: drop-shadow(0 0 15px var(--primary-accent-glow));
 }
-.tela-espera h3 { font-size: 1.5rem; font-weight: 700; color: var(--texto-branco); letter-spacing: -0.5px; }
+.tela-espera h3 { font-size: 1.5rem; font-weight: 700; color: var(--texto-primario); letter-spacing: -0.5px; }
 .tela-espera p { color: var(--texto-secundario); font-size: 0.95rem; }
 
 .spinner {
@@ -481,7 +481,7 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .tela-erro i { font-size: 2.8rem; color: var(--netflix-red); }
-.tela-erro h3 { font-size: 1.2rem; font-weight: 700; color: var(--texto-branco); }
+.tela-erro h3 { font-size: 1.2rem; font-weight: 700; color: var(--texto-primario); }
 .tela-erro p { color: var(--texto-terciario); font-size: 0.85rem; }
 
 .oculto { display: none !important; }
@@ -518,7 +518,7 @@ body {
 .detalhes-canal h3 {
     font-size: 1.05rem;
     font-weight: 700;
-    color: var(--texto-branco);
+    color: var(--texto-primario);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -590,7 +590,7 @@ body {
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, var(--primary-accent) 0%, var(--primary-accent-dark) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     font-size: 1.4rem;
     color: white;
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
@@ -663,7 +663,7 @@ body {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.82);
+    background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
@@ -698,7 +698,7 @@ body {
 .modal-cabecalho h2 {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--texto-branco);
+    color: var(--texto-primario);
     display: flex;
     align-items: center;
     gap: 10px;
